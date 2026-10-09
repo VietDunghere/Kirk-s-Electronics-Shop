@@ -34,7 +34,7 @@ export const customerController = {
   },
 
   async me() {
-    const session = getSessionUser();
+    const session = await getSessionUser();
     if (!session) return NextResponse.json({ user: null });
     const user = await customerService.getProfile(session.id);
     if (!user) return NextResponse.json({ user: null });

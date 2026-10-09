@@ -28,12 +28,12 @@ export default async function HomePage() {
             <p className="mt-4 text-xs text-white/80">Demo login: customer@example.com / 123456 · Test card 4111 1111 1111 1111</p>
           </div>
           <div className="hidden items-center justify-center sm:flex">
-            <div className="grid grid-cols-2 gap-3">
-              {featured.slice(0, 4).map((p) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={p.id} src={p.image} alt={p.name} className="h-32 w-32 rounded-xl object-cover shadow-lg" />
-              ))}
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/kirk_bia.jpg"
+              alt="Kirk's Ecommerce Shop store"
+              className="h-72 w-full rounded-2xl object-cover shadow-lg"
+            />
           </div>
         </div>
       </section>

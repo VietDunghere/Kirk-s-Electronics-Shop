@@ -1,6 +1,8 @@
 // application.service — Chatbot use case: server-side retrieval (synonyms + ranking) + Groq reply.
 import { productRepository } from "../../infrastructure/repository/productRepository";
 import { orderRepository } from "../../infrastructure/repository/orderRepository";
+import { recommendationService } from "./recommendationService";
+import { cartAssistantService, detectCartIntent } from "./cartAssistantService";
 import { FREE_SHIP_THRESHOLD, SHIPPING_FEE } from "../../domain/order/order";
 import { AppError } from "./appError";
 
@@ -12,6 +14,38 @@ export type ChatProduct = {
   image: string;
   category: string;
   rating: number;
+};
+
+export type RecommendedChatProduct = ChatProduct & { reason: string };
+
+export type CartProposal = {
+  proposalId: string;
+  product: ChatProduct;
+  quantity: number;
+};
+
+export type CartAction =
+  | { type: "propose_add"; proposal: CartProposal }
+  | {
+      type: "added";
+      product: ChatProduct;
+      quantity: number;
+      cart: { totalCount: number; subtotal: number };
+      guest?: boolean;
+    }
+  | { type: "show_cart"; cart: { totalCount: number; subtotal: number }; lines: string[] };
+
+export type ChatReply = {
+  reply: string;
+  products: ChatProduct[];
+  recommendations?: RecommendedChatProduct[];
+  cartAction?: CartAction;
+};
+
+export type ChatReplyOptions = {
+  userId?: number | null;
+  proposal?: { proposalId?: unknown; productId?: unknown; quantity?: unknown } | null;
+  guestCart?: { productId?: unknown; qty?: unknown }[];
 };
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -222,7 +256,8 @@ Quy tắc:
 - Tên hãng thường không nằm trong tên sản phẩm (Galaxy = Samsung, Pixel = Google, iPhone = Apple). Chỉ nói shop không có khi không món nào trong dữ liệu phù hợp (ví dụ khách hỏi hãng Xiaomi mà không có), và có thể gợi ý món tương tự.
 - Sản phẩm HẾT HÀNG thì nói rõ là hết hàng, không gợi ý mua.
 - Giá tính bằng VND. Phí ship ${SHIPPING_FEE.toLocaleString("vi-VN")}đ, miễn phí cho đơn từ ${FREE_SHIP_THRESHOLD.toLocaleString("vi-VN")}đ. Thanh toán: thẻ hoặc ví MoMo/ZaloPay/VNPay (mô phỏng).
-- Giao diện tự hiển thị thẻ sản phẩm bấm vào được, nên chỉ cần nêu tên và lý do gợi ý, không cần link.`;
+- Giao diện tự hiển thị thẻ sản phẩm bấm vào được, nên chỉ cần nêu tên và lý do gợi ý, không cần link.
+- Khi có khối KHÁCH ĐANG NHỜ TƯ VẤN MUA SẮM thì tuân thủ phần [HƯỚNG DẪN] đi kèm: giới thiệu lần lượt đúng các sản phẩm đề xuất, tuyệt đối không nêu món ngoài danh sách.`;
 
 function sanitize(input: unknown): Msg[] {
   if (!Array.isArray(input)) return [];
@@ -235,28 +270,71 @@ function sanitize(input: unknown): Msg[] {
     .map((m) => ({ role: m.role, content: m.content.slice(0, 600) }));
 }
 
+const REC_GUIDE =
+  "Hãy giới thiệu lần lượt từng sản phẩm đề xuất (nêu đúng tên đầy đủ), mỗi món 1-2 câu dựa trên lý do gợi ý. " +
+  "Nếu có mục LƯU Ý thì nói rõ điều kiện nào chưa đáp ứng được. " +
+  "Tuyệt đối không nêu sản phẩm ngoài danh sách. Kết thúc bằng một câu mời khách bấm Thêm vào giỏ bên dưới.";
+
 export const chatService = {
-  async reply(rawMessages: unknown): Promise<{ reply: string; products: ChatProduct[] }> {
+  async reply(rawMessages: unknown, opts: ChatReplyOptions = {}): Promise<ChatReply> {
     const history = sanitize(rawMessages);
     if (!history.length || history[history.length - 1].role !== "user") throw new AppError(400, "Bad request.");
 
     try {
+      const userTexts = history.filter((m) => m.role === "user").map((m) => m.content);
+      const lastUser = userTexts[userTexts.length - 1] || "";
+      // Feature 2: natural-language cart actions run before advice/lookup.
+      // A bare "confirm" word only counts when a proposal is actually pending
+      // (otherwise it falls through to the normal chat path — never a blind add).
+      const cartKind = detectCartIntent(lastUser);
+      if (cartKind && (cartKind !== "confirm" || opts.proposal?.proposalId)) {
+        const handled = await cartAssistantService.handle({
+          kind: cartKind,
+          text: lastUser,
+          history: userTexts.slice(0, -1),
+          userId: opts.userId ?? null,
+          proposal: opts.proposal,
+          guestCart: opts.guestCart
+        });
+        if (handled) return handled;
+      }
+      // Feature 1: shopping-advice requests get deterministic DB recommendations
+      // (real products + reasons). Everything else keeps the legacy lookup path.
+      const wantsRec =
+        recommendationService.isRecommendationRequest(lastUser) && !ORDER_CODE_RE.test(userTexts.slice(-2).join(" "));
+      const rec = wantsRec ? await recommendationService.recommend(lastUser) : null;
       // Retrieval runs here (synonyms + ranking), not inside the model, so keyword luck can't hide a product.
-      const ctx = await buildContext(history.filter((m) => m.role === "user").map((m) => m.content));
+      const ctx = rec ? null : await buildContext(userTexts);
+      const products: ChatProduct[] = rec
+        ? rec.items.map(({ reason: _r, meetsBudget: _m, ...p }) => p)
+        : ctx!.products;
+      const recommendations: RecommendedChatProduct[] | undefined = rec
+        ? rec.items.map(({ meetsBudget: _m, ...p }) => p)
+        : undefined;
 
       const apiKey = process.env.GROQ_API_KEY;
       if (!apiKey) {
+        if (rec) {
+          return {
+            reply: recommendationService.formatFallbackReply(rec),
+            products,
+            recommendations
+          };
+        }
         return {
-          reply: ctx.products.length
-            ? "Chatbot AI chưa có API key nên mình chỉ gợi ý theo từ khóa. Các sản phẩm phù hợp nhất:"
-            : "Chatbot AI chưa có API key. Bạn thử nhập tên sản phẩm (ví dụ: laptop) nhé.",
-          products: ctx.products
+          reply:
+            ctx!.products.length !== 0
+              ? "Chatbot AI chưa có API key nên mình chỉ gợi ý theo từ khóa. Các sản phẩm phù hợp nhất:"
+              : "Chatbot AI chưa có API key. Bạn thử nhập tên sản phẩm (ví dụ: laptop) nhé.",
+          products: ctx!.products
         };
       }
 
       // Shop data rides on the last user message, so earlier turns stay short and the prompt stays small.
+      const contextBlock = rec ? recommendationService.formatForLLM(rec) : ctx!.text;
+      const guide = rec ? `\n\n[HƯỚNG DẪN]\n${REC_GUIDE}` : "";
       const messages = history.map((m, i) =>
-        i === history.length - 1 ? { role: "user", content: `${m.content}\n\n[DỮ LIỆU CỬA HÀNG]\n${ctx.text}` } : m
+        i === history.length - 1 ? { role: "user", content: `${m.content}\n\n[DỮ LIỆU CỬA HÀNG]\n${contextBlock}${guide}` } : m
       );
 
       const res = await fetch(GROQ_URL, {
@@ -282,14 +360,49 @@ export const chatService = {
       const data = await res.json();
       const reply = (data.choices?.[0]?.message?.content || "").trim() || "Mình chưa có câu trả lời, bạn hỏi lại giúp mình nhé.";
 
-      // Cards = products the reply actually names (full name, or its model tail like "boom 360"), so cards match the text.
+      // Recommendation path: cards are the explicit DB picks (no name-matching luck).
+      if (rec) return { reply, products, recommendations };
+
+      // Cards = products the reply actually talks about. Exact full-name/tail match
+      // first; otherwise the longest run of consecutive name-tokens found in the
+      // reply ("Huawei MatePad 11.5 8/128GB" vs "MatePad 11.5inch" still hits on
+      // "huawei matepad"). A run of >= 2 avoids one-word false friends
+      // ("Galaxy" alone must not card every Samsung).
+      const toks = (s: string) =>
+        s
+          .toLowerCase()
+          .replace(/([a-z])(\d)/g, "$1 $2")
+          .replace(/(\d)([a-z])/g, "$1 $2")
+          .split(/[^a-z0-9]+/)
+          .filter((w) => w.length >= 2);
+      const replyToks = toks(reply);
+      const replyStr = ` ${replyToks.join(" ")} `;
       const lower = reply.toLowerCase();
+      // A run counts only if it holds a real name-word (alpha, len>=4): spec-only
+      // runs like "128 gb" / "15 128" must not card every 128GB phone.
+      const isNameWord = (w: string) => /[a-z]/.test(w) && w.length >= 4;
       const cards: ChatProduct[] = (await listAllProducts())
         .map((p) => {
           const name = p.name.toLowerCase();
           const tail = name.split(" ").slice(-2).join(" ");
-          const at = Math.min(...[lower.indexOf(name), lower.indexOf(tail)].filter((i) => i >= 0), Infinity);
-          return { p, at };
+          const exactAt = Math.min(...[lower.indexOf(name), lower.indexOf(tail)].filter((i) => i >= 0), Infinity);
+          if (Number.isFinite(exactAt)) return { p, at: exactAt };
+          const nt = toks(p.name);
+          let run = 0;
+          let firstAt = Infinity;
+          for (let i = 0; i < nt.length; i++) {
+            for (let j = i + 1; j < nt.length; j++) {
+              const win = nt.slice(i, j + 1);
+              if (!win.some(isNameWord)) continue;
+              const seq = ` ${win.join(" ")} `;
+              const at = replyStr.indexOf(seq);
+              if (at >= 0) {
+                if (win.length > run) run = win.length;
+                if (at < firstAt) firstAt = at;
+              } else break;
+            }
+          }
+          return { p, at: run >= 2 ? firstAt : Infinity };
         })
         .filter((x) => Number.isFinite(x.at))
         .sort((a, b) => a.at - b.at)

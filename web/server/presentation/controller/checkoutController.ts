@@ -7,7 +7,7 @@ import { fail, requireSession } from "./http";
 export const checkoutController = {
   async checkout(req: Request) {
     try {
-      const session = requireSession("Please login before checkout.");
+      const session = await requireSession("Please login before checkout.");
       const input = (await req.json()) as CheckoutInput;
       const cartId = await cartService.getCartId(session.id);
       const order = await checkoutService.checkout(cartId ?? 0, session.id, input);

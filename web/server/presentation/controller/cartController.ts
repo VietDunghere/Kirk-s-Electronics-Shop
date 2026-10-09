@@ -7,7 +7,7 @@ import { fail, requireSession } from "./http";
 export const cartController = {
   async viewCart() {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       const cartId = await cartService.getOrCreateCartId(session.id);
       return NextResponse.json({ cart: await cartService.getCart(cartId) });
     } catch (e) {
@@ -17,7 +17,7 @@ export const cartController = {
 
   async addToCart(req: Request) {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       const { productId, quantity } = await req.json();
       const cartId = await cartService.getOrCreateCartId(session.id);
       const cart = await cartService.addItem(cartId, productId, quantity);
@@ -29,7 +29,7 @@ export const cartController = {
 
   async clearCart() {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       const cartId = await cartService.getOrCreateCartId(session.id);
       await cartService.clear(cartId);
       return NextResponse.json({ message: "Cart cleared." });
@@ -40,7 +40,7 @@ export const cartController = {
 
   async updateQuantity(req: Request, productId: string) {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       const { quantity } = await req.json();
       const cartId = (await cartService.getCartId(session.id)) ?? 0;
       await cartService.updateQuantity(cartId, productId, quantity);
@@ -52,7 +52,7 @@ export const cartController = {
 
   async removeItem(productId: string) {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       const cartId = (await cartService.getCartId(session.id)) ?? 0;
       await cartService.removeItem(cartId, productId);
       return NextResponse.json({ message: "Product removed from cart." });

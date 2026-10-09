@@ -6,15 +6,14 @@ import { customerService, type SessionUser } from "../../application/service/cus
 
 export const AUTH_COOKIE = "shopviet_token";
 
-export function getSessionUser(): SessionUser | null {
+export async function getSessionUser(): Promise<SessionUser | null> {
   const token = cookies().get(AUTH_COOKIE)?.value;
-  if (!token) return null;
-  return customerService.verifyToken(token);
+  return customerService.resolveSession(token);
 }
 
 /** Login gate: returns the session user or raises 401 with the given message. */
-export function requireSession(message = "Login required."): SessionUser {
-  const session = getSessionUser();
+export async function requireSession(message = "Login required."): Promise<SessionUser> {
+  const session = await getSessionUser();
   if (!session) throw new AppError(401, message);
   return session;
 }
