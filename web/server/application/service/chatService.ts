@@ -1,4 +1,4 @@
-// application.service — Chatbot use case: server-side retrieval (synonyms + ranking) + Groq reply.
+// application.service — Chatbot use case: server-side retrieval (synonyms + ranking) + NVIDIA NIM reply.
 import { productRepository } from "../../infrastructure/repository/productRepository";
 import { orderRepository } from "../../infrastructure/repository/orderRepository";
 import { FREE_SHIP_THRESHOLD, SHIPPING_FEE } from "../../domain/order/order";
@@ -16,8 +16,8 @@ export type ChatProduct = {
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+const NVIDIA_NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
+const MODEL = process.env.NVIDIA_MODEL || "openai/gpt-oss-20b";
 
 const toChatProduct = (p: ChatProduct): ChatProduct => ({
   id: p.id,
@@ -244,7 +244,7 @@ export const chatService = {
       // Retrieval runs here (synonyms + ranking), not inside the model, so keyword luck can't hide a product.
       const ctx = await buildContext(history.filter((m) => m.role === "user").map((m) => m.content));
 
-      const apiKey = process.env.GROQ_API_KEY;
+      const apiKey = process.env.NVIDIA_API_KEY;
       if (!apiKey) {
         return {
           reply: ctx.products.length
@@ -259,22 +259,25 @@ export const chatService = {
         i === history.length - 1 ? { role: "user", content: `${m.content}\n\n[DỮ LIỆU CỬA HÀNG]\n${ctx.text}` } : m
       );
 
-      const res = await fetch(GROQ_URL, {
+      const res = await fetch(NVIDIA_NIM_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
           model: MODEL,
           messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
           temperature: 0.1,
-          reasoning_effort: "low",
           max_tokens: 1200
         })
       });
       if (!res.ok) {
-        console.error("Groq error", res.status, await res.text());
+        console.error("NVIDIA NIM error", res.status, await res.text());
         const reply =
           res.status === 429
             ? "Chatbot đang quá tải (hết lượt miễn phí tạm thời), bạn thử lại sau ít phút nhé."
+            : res.status === 410 || res.status === 404
+              ? "Mô hình chatbot hiện không khả dụng. Vui lòng kiểm tra NVIDIA_MODEL trong .env."
+              : res.status === 401 || res.status === 403
+                ? "API key NVIDIA không hợp lệ hoặc không có quyền dùng mô hình này. Vui lòng kiểm tra NVIDIA_API_KEY và NVIDIA_MODEL trong .env."
             : "Chatbot đang gặp sự cố, bạn thử lại sau nhé.";
         return { reply, products: [] };
       }
@@ -297,7 +300,13 @@ export const chatService = {
       return { reply, products: cards.slice(0, 6) };
     } catch (e) {
       console.error(e);
-      return { reply: "Chatbot đang gặp sự cố, bạn thử lại sau nhé.", products: [] };
+      return {
+        reply:
+          e instanceof TypeError && e.message === "fetch failed"
+            ? "Máy chủ không kết nối được NVIDIA NIM. Vui lòng kiểm tra mạng hoặc quyền truy cập internet của tiến trình server."
+            : "Chatbot đang gặp sự cố, bạn thử lại sau nhé.",
+        products: []
+      };
     }
   }
 };
