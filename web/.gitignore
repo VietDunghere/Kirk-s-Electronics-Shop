@@ -8,3 +8,4 @@ dist/
 prisma/*.db
 prisma/*.db-journal
 *.db
+*.tsbuildinfo

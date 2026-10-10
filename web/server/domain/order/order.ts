@@ -18,6 +18,17 @@ export function calcShipping(subtotal: number): number {
   return subtotal >= FREE_SHIP_THRESHOLD ? 0 : SHIPPING_FEE;
 }
 
+export const DRONE_FEE = 49000;
+export const ROBOT_CAR_FEE = 29000;
+
+/** Shipping fee for a delivery method. Drone and autonomous car have a flat fee (never free). */
+export function calcDeliveryFee(method: string | undefined, subtotal: number): number {
+  if (subtotal === 0) return 0;
+  if (method === "DRONE") return DRONE_FEE;
+  if (method === "ROBOT_CAR") return ROBOT_CAR_FEE;
+  return calcShipping(subtotal);
+}
+
 /** Order code format ORD-YYYY-XXXXX, built from the id the new order will get. */
 export function generateOrderCode(year: number, lastOrderId: number): string {
   return `ORD-${year}-${String(lastOrderId + 1).padStart(5, "0")}`;
@@ -136,6 +147,7 @@ export interface OrderFields {
   totalAmount: number;
   subtotal: number;
   shippingFee: number;
+  deliveryMethod?: string;
   paymentMethod: string;
   paymentStatus: string;
   orderStatus: string;
@@ -179,10 +191,10 @@ export class Order {
     this.items.push(item);
   }
 
-  /** Subtotal of the items + shipping fee (free from 500,000 VND). Returns the total. */
+  /** Subtotal of the items + shipping fee (standard delivery is free from 500,000 VND). Returns the total. */
   calculateTotal(): number {
     this.subtotal = this.items.reduce((sum, item) => sum + item.subtotal(), 0);
-    this.shippingFee = calcShipping(this.subtotal);
+    this.shippingFee = calcDeliveryFee(this.deliveryMethod, this.subtotal);
     this.totalAmount = this.subtotal + this.shippingFee;
     return this.totalAmount;
   }

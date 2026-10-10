@@ -102,6 +102,7 @@ export default function Navbar() {
         <nav className="ml-auto hidden items-center gap-4 text-sm font-medium lg:flex">
           <Link href="/" className="hover:text-[#B31942]">Home</Link>
           <Link href="/products" className="hover:text-[#B31942]">Products</Link>
+          <Link href="/bundle" className="hover:text-[#B31942]">🤖 AI Setup</Link>
           <Link href="/track-order" className="hover:text-[#B31942]">Track Order</Link>
           {me && <Link href="/orders" className="hover:text-[#B31942]">My Orders</Link>}
         </nav>
@@ -143,6 +144,7 @@ export default function Navbar() {
         <div className="flex flex-col gap-1 border-t px-4 py-3 text-sm font-medium lg:hidden">
           <Link href="/" onClick={() => setMenuOpen(false)}>Home</Link>
           <Link href="/products" onClick={() => setMenuOpen(false)}>Products</Link>
+          <Link href="/bundle" onClick={() => setMenuOpen(false)}>🤖 AI Setup</Link>
           <Link href="/track-order" onClick={() => setMenuOpen(false)}>Track Order</Link>
           {me ? (
             <>

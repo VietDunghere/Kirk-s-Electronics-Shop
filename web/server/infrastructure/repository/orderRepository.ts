@@ -38,6 +38,7 @@ export const orderRepository = {
           totalAmount: order.totalAmount,
           subtotal: order.subtotal,
           shippingFee: order.shippingFee,
+          deliveryMethod: order.deliveryMethod ?? "STANDARD",
           paymentMethod: order.paymentMethod,
           paymentStatus: order.paymentStatus,
           orderStatus: order.orderStatus,

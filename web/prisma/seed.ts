@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { PC_PRODUCTS } from "./pcProducts";
 
 const prisma = new PrismaClient();
 
@@ -324,10 +325,11 @@ async function main() {
   });
   console.log("Created test user: customer@example.com / 123456");
 
-  for (const p of products) {
+  const all = [...products, ...PC_PRODUCTS];
+  for (const p of all) {
     await prisma.product.create({ data: p });
   }
-  console.log(`Created ${products.length} products`);
+  console.log(`Created ${all.length} products`);
 }
 
 main()

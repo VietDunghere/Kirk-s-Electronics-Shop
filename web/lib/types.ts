@@ -1,3 +1,5 @@
+import type { Tracking } from "@/server/domain/order/delivery";
+
 export type ProductDTO = {
   id: number;
   name: string;
@@ -43,6 +45,8 @@ export type OrderDTO = {
   totalAmount: number;
   subtotal: number;
   shippingFee: number;
+  deliveryMethod: string;
+  tracking?: Tracking | null;
   paymentMethod: string;
   paymentStatus: string;
   orderStatus: string;
