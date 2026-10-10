@@ -26,6 +26,18 @@ export const customerService = {
     }
   },
 
+  // Full session check: valid signature AND the user still exists in the DB.
+  // After a DB reseed, old cookies point to deleted user ids — those must
+  // become "logged out" (401), never ghost ids that break FK constraints.
+  async resolveSession(token: string | undefined): Promise<SessionUser | null> {
+    if (!token) return null;
+    const payload = customerService.verifyToken(token);
+    if (!payload || typeof payload.id !== "number") return null;
+    const profile = await customerRepository.findProfileById(payload.id);
+    if (!profile) return null;
+    return { id: profile.id, fullName: profile.fullName, email: profile.email };
+  },
+
   async register(input: RegistrationInput) {
     const invalid = validateRegistration(input);
     if (invalid) throw new AppError(400, invalid);

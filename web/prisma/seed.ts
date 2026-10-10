@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { PC_PRODUCTS } from "./pcProducts";
 
 const prisma = new PrismaClient();
 
@@ -18,6 +19,8 @@ type SeedProduct = {
 
 const unsplash = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=800&q=80`;
 const pexels = (id: string) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800`;
+// Wikimedia Commons exact product shots (hotlink via Special:FilePath, verified file names)
+const wikimedia = (file: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${file}?width=800`;
 
 // Real product photos (verified live): Unsplash for most, Pexels where it has the exact item.
 // Premium/dark backgrounds where possible for a classy look.
@@ -42,6 +45,33 @@ const PHOTOS: Record<string, string> = {
   "stand-alu": pexels("4792717"), // laptop on ergonomic stand
   "phone-nova12": unsplash("1511707171634-5f897ff02aa9"), // hand holding smartphone
   "vr-vision": unsplash("1622979135225-d2ba269cf1ac"), // VR headset
+  // --- 20 new products: iPhone / iPad / AirPods / Samsung / Huawei ---
+  "iphone-16pm": unsplash("1695048133142-1a20484d2569"), // iPhone Pro titanium
+  "iphone-16": unsplash("1605236453806-6ff36851218e"), // blue iPhone
+  "iphone-15": unsplash("1510557880182-3d4d3cba35a5"), // iPhone in hand
+  "iphone-14": unsplash("1580910051074-3eb694886505"), // iPhone with case
+  "ipad-pro-m4": unsplash("1561154464-82e9adf32764"), // iPad Pro + Pencil
+  "ipad-air-m2": unsplash("1585790050230-5dd28404ccb9"), // iPad on desk
+  "ipad-gen10": unsplash("1542751110-97427bbecf20"), // iPad tablet
+  "ipad-mini6": unsplash("1544244015-0df4b3ffc6b0"), // tablet with keyboard
+  "airpods-pro2": unsplash("1606220945770-b5b6c2c55bf1"), // AirPods Pro
+  "airpods-3": unsplash("1572569511254-d8f925fe2cbb"), // AirPods
+  "airpods-max": unsplash("1600294037681-c80b4cb5b434"), // over-ear headphones
+  "samsung-s25u": wikimedia("Samsung_Galaxy_S25_Ultra.jpg"), // Galaxy S25 Ultra thật (Wikimedia)
+  "samsung-fold6": wikimedia("Samsung_Galaxy_Z_Fold_6.jpg"), // Z Fold 6 thật (Wikimedia)
+  "samsung-flip6": wikimedia("Samsung_Galaxy_Z_Flip_6.jpg"), // Z Flip 6 thật (Wikimedia)
+  "samsung-tab-s9": wikimedia("Samsung_Galaxy_Tab_S9.png"), // Galaxy Tab S9 thật (Wikimedia)
+  "samsung-buds2": wikimedia("Pair_of_lavender_Samsung_Galaxy_Buds2_Pro.jpg"), // Buds 2 Pro thật (Wikimedia)
+  "samsung-watch6": wikimedia("Samsung_Galaxy_Watch_6_Classic.jpg"), // Watch 6 Classic thật (Wikimedia)
+  "huawei-pura70": "https://fdn2.gsmarena.com/vv/pics/huawei/huawei-pura70-ultra-1.jpg", // Pura 70 Ultra official render lớn (GSMArena)
+  "huawei-watch-gt4": "https://fdn2.gsmarena.com/vv/pics/huawei/huawei-watch-gt4-1.jpg", // Watch GT 4 official render lớn (GSMArena)
+  "huawei-matepad": "https://fdn2.gsmarena.com/vv/pics/huawei/huawei-matepad-115-1.jpg", // MatePad 11.5 official render lớn (GSMArena)
+  // --- 5 drones DJI (ảnh official DJI Việt Nam, nền trắng vuông vừa khung card) ---
+  "dji-mini4pro": "https://product.hstatic.net/200000843159/product/mini_4pro_deb45ae4395c409b8245c65009fdf62c_master.jpg",
+  "dji-mini5pro": "https://cdn.hstatic.net/products/200000843159/artboard_1_620373862ae841968d5b68e8b3edecf9_master.jpg",
+  "dji-air3s": "https://product.hstatic.net/200000843159/product/air3s_7d145e4acd484ca9b59d2cbdd52fe424_master.jpg",
+  "dji-mavic4pro": "https://product.hstatic.net/200000843159/product/artboard_1_6a9965a47413439e95d97886b33a422d_master.png",
+  "dji-avata2": "https://cdn.hstatic.net/products/200000843159/main_avatar_ab94a9cc57424ae9a06162c2624cd574_master.jpg",
 };
 
 const img = (seed: string) => PHOTOS[seed] ?? `https://picsum.photos/seed/${seed}/600/600`;
@@ -146,6 +176,133 @@ const products: SeedProduct[] = [
     name: "VR Headset Vision One",
     description: "All-in-one VR headset, 4K display, 6DoF tracking, 256GB storage. Experience the metaverse.",
     price: 12990000, stock: 8, image: img("vr-vision"), category: "Gaming", rating: 4.7, sold: 75, isFeatured: true, isNew: true
+  },
+  // ---------- 20 NEW: iPhone / iPad / AirPods / Samsung / Huawei ----------
+  {
+    name: "iPhone 16 Pro Max 256GB",
+    description: "Flagship Apple 6.9-inch, chip A18 Pro, khung Titanium, camera 48MP Fusion, nút Camera Control, USB-C.",
+    price: 34990000, stock: 15, image: img("iphone-16pm"), category: "Phones", rating: 4.9, sold: 210, isFeatured: true, isNew: true
+  },
+  {
+    name: "iPhone 16 128GB",
+    description: "iPhone 16 6.1-inch, chip A18, camera kép 48MP, Dynamic Island, pin cả ngày, USB-C.",
+    price: 22990000, stock: 25, image: img("iphone-16"), category: "Phones", rating: 4.8, sold: 340, isFeatured: true, isNew: true
+  },
+  {
+    name: "iPhone 15 128GB",
+    description: "iPhone 15 6.1-inch, Dynamic Island, camera 48MP, chip A16 Bionic, USB-C. Giá tốt nhất phân khúc Apple mới.",
+    price: 19490000, stock: 30, image: img("iphone-15"), category: "Phones", rating: 4.8, sold: 560
+  },
+  {
+    name: "iPhone 14 128GB",
+    description: "iPhone 14 6.1-inch, chip A15, camera kép 12MP, Face ID, kháng nước IP68. Lựa chọn tiết kiệm.",
+    price: 16490000, stock: 20, image: img("iphone-14"), category: "Phones", rating: 4.7, sold: 480
+  },
+  {
+    name: "iPad Pro 11 M4 256GB WiFi",
+    description: "iPad Pro 11-inch chip M4, màn hình Ultra Retina XDR OLED 120Hz, hỗ trợ Apple Pencil Pro, mỏng 5.3mm.",
+    price: 28990000, stock: 12, image: img("ipad-pro-m4"), category: "Electronics", rating: 4.9, sold: 120, isFeatured: true, isNew: true
+  },
+  {
+    name: "iPad Air 11 M2 128GB WiFi",
+    description: "iPad Air 11-inch chip M2, màn hình Liquid Retina, Touch ID, hỗ trợ Pencil Pro, pin 10 giờ.",
+    price: 16990000, stock: 18, image: img("ipad-air-m2"), category: "Electronics", rating: 4.8, sold: 190, isFeatured: true
+  },
+  {
+    name: "iPad Gen 10 10.9 64GB WiFi",
+    description: "iPad thế hệ 10 màn 10.9-inch, chip A14, Touch ID cạnh viền, camera ngang 12MP. Phù hợp học sinh, sinh viên.",
+    price: 10490000, stock: 35, image: img("ipad-gen10"), category: "Electronics", rating: 4.6, sold: 320
+  },
+  {
+    name: "iPad mini 6 64GB WiFi",
+    description: "iPad mini 8.3-inch nhỏ gọn, chip A15, màn Liquid Retina, hỗ trợ Apple Pencil 2. Mang đi mọi nơi.",
+    price: 13990000, stock: 16, image: img("ipad-mini6"), category: "Electronics", rating: 4.7, sold: 150, isNew: true
+  },
+  {
+    name: "AirPods Pro 2 USB-C",
+    description: "Tai nghe Apple chống ồn chủ động 2x, chip H2, hộp sạc USB-C MagSafe, âm thanh không gian cá nhân hóa.",
+    price: 5990000, stock: 50, image: img("airpods-pro2"), category: "Accessories", rating: 4.9, sold: 680, isFeatured: true
+  },
+  {
+    name: "Tai nghe AirPods 3 Lightning",
+    description: "AirPods 3 âm thanh không gian, chống mồ hôi IPX4, pin 30 giờ cùng hộp sạc. Đàm thoại rõ ràng.",
+    price: 4190000, stock: 45, image: img("airpods-3"), category: "Accessories", rating: 4.7, sold: 520
+  },
+  {
+    name: "Tai nghe AirPods Max",
+    description: "Tai nghe chụp tai cao cấp Apple, chip H1, chống ồn chủ động, âm thanh Hi-Fi, đệm vải dệt thoáng khí.",
+    price: 12990000, stock: 10, image: img("airpods-max"), category: "Accessories", rating: 4.8, sold: 90, isFeatured: true
+  },
+  {
+    name: "Samsung Galaxy S25 Ultra 12/256GB",
+    description: "Flagship Samsung 6.9-inch QHD+ 120Hz, Snapdragon 8 Elite, camera 200MP, bút S-Pen, pin 5000mAh, Galaxy AI.",
+    price: 33990000, stock: 20, image: img("samsung-s25u"), category: "Phones", rating: 4.9, sold: 180, isFeatured: true, isNew: true
+  },
+  {
+    name: "Samsung Galaxy Z Fold 6 12/256GB",
+    description: "Điện thoại gập 7.6-inch AMOLED, Snapdragon 8 Gen 3, đa nhiệm Flex, kháng nước IPX8, Galaxy AI.",
+    price: 43990000, stock: 8, image: img("samsung-fold6"), category: "Phones", rating: 4.7, sold: 60, isFeatured: true, isNew: true
+  },
+  {
+    name: "Samsung Galaxy Z Flip 6 12/256GB",
+    description: "Điện thoại gập vỏ sò 6.7-inch, màn phụ FlexWindow 3.4-inch, camera 50MP, pin 4000mAh. Nhỏ gọn thời trang.",
+    price: 27990000, stock: 12, image: img("samsung-flip6"), category: "Phones", rating: 4.6, sold: 85, isNew: true
+  },
+  {
+    name: "Samsung Galaxy Tab S9 FE 6/128GB",
+    description: "Máy tính bảng Samsung 10.9-inch 90Hz, chip Exynos 1380, bút S-Pen kèm sẵn, kháng nước IP68, pin 8000mAh.",
+    price: 10990000, stock: 22, image: img("samsung-tab-s9"), category: "Electronics", rating: 4.6, sold: 140
+  },
+  {
+    name: "Samsung Galaxy Buds 2 Pro",
+    description: "Tai nghe Samsung chống ồn ANC, âm thanh Hi-Fi 24bit, 3 mic đàm thoại, pin 29 giờ, kháng nước IPX7.",
+    price: 2990000, stock: 55, image: img("samsung-buds2"), category: "Accessories", rating: 4.6, sold: 410
+  },
+  {
+    name: "Samsung Galaxy Watch 6 Classic 47mm",
+    description: "Đồng hồ Samsung mặt xoay, màn AMOLED, đo ECG, huyết áp, SpO2, GPS, pin 40 giờ, kháng nước 5ATM.",
+    price: 7490000, stock: 28, image: img("samsung-watch6"), category: "Accessories", rating: 4.7, sold: 230, isNew: true
+  },
+  {
+    name: "Huawei Pura 70 Ultra 16/512GB",
+    description: "Flagship Huawei camera Ultra Lighting 50MP, màn 6.8-inch LTPO 120Hz, pin 5200mAh sạc nhanh 100W.",
+    price: 23990000, stock: 10, image: img("huawei-pura70"), category: "Phones", rating: 4.7, sold: 70, isFeatured: true, isNew: true
+  },
+  {
+    name: "Huawei Watch GT 4 46mm",
+    description: "Đồng hồ Huawei pin 14 ngày, màn AMOLED 1.43-inch, đo nhịp tim, SpO2, 100+ chế độ thể thao, nghe gọi Bluetooth.",
+    price: 4990000, stock: 32, image: img("huawei-watch-gt4"), category: "Accessories", rating: 4.6, sold: 260
+  },
+  {
+    name: "Huawei MatePad 11.5 8/128GB",
+    description: "Máy tính bảng Huawei 11.5-inch 2.2K 120Hz, chip Snapdragon 7 Gen 1, 4 loa, pin 7700mAh. Kèm bút M-Pencil.",
+    price: 9990000, stock: 20, image: img("huawei-matepad"), category: "Electronics", rating: 4.5, sold: 110, isNew: true
+  },
+  // ---------- 5 DRONES DJI (giá tham khảo DJI Việt Nam / DJI Store) ----------
+  {
+    name: "DJI Mini 4 Pro (DJI RC-N2)",
+    description: "Flycam siêu nhẹ dưới 249g, camera 48MP CMOS 1/1.3-inch, quay dọc 4K/60fps HDR, tránh chướng ngại vật đa hướng, ActiveTrack 360°, bay 34 phút, truyền video 20km.",
+    price: 17790000, stock: 14, image: img("dji-mini4pro"), category: "Drones", rating: 4.8, sold: 160, isFeatured: true
+  },
+  {
+    name: "DJI Mini 5 Pro (DJI RC-N3)",
+    description: "Flycam mini mới 2025, cảm biến CMOS 1-inch 50MP f/1.8, gimbal xoay 225° quay dọc, LiDAR tránh vật cản ban đêm, ActiveTrack 360°, bay 36 phút, truyền video O4+ 20km.",
+    price: 21990000, stock: 10, image: img("dji-mini5pro"), category: "Drones", rating: 4.9, sold: 85, isFeatured: true, isNew: true
+  },
+  {
+    name: "DJI Air 3S (DJI RC-N3)",
+    description: "Drone camera kép du lịch: góc rộng CMOS 1-inch 50MP + tele 70mm 48MP, quay 4K/120fps HDR 14 stops, LiDAR ban đêm, RTH thông minh, bay 45 phút, truyền 20km.",
+    price: 25000000, stock: 12, image: img("dji-air3s"), category: "Drones", rating: 4.8, sold: 120, isFeatured: true
+  },
+  {
+    name: "DJI Mavic 4 Pro (DJI RC 2)",
+    description: "Flycam flagship 2025: camera Hasselblad 4/3 CMOS 100MP quay HDR 6K/60fps, tele kép 70mm + 168mm, gimbal xoay 360°, ActiveTrack 360°, bay 51 phút, truyền O4+ 30km.",
+    price: 49990000, stock: 6, image: img("dji-mavic4pro"), category: "Drones", rating: 5.0, sold: 45, isFeatured: true, isNew: true
+  },
+  {
+    name: "DJI Avata 2 Fly More Combo (3 pin)",
+    description: "Flycam FPV nhập vai kèm kính Goggles 3 + tay RC Motion 3 + 3 pin: cảm biến 1/1.3-inch quay 4K/60fps HDR góc siêu rộng 155°, RockSteady, bảo vệ cánh liền khối, bay 23 phút.",
+    price: 25990000, stock: 9, image: img("dji-avata2"), category: "Drones", rating: 4.7, sold: 95, isNew: true
   }
 ];
 
@@ -168,10 +325,11 @@ async function main() {
   });
   console.log("Created test user: customer@example.com / 123456");
 
-  for (const p of products) {
+  const all = [...products, ...PC_PRODUCTS];
+  for (const p of all) {
     await prisma.product.create({ data: p });
   }
-  console.log(`Created ${products.length} products`);
+  console.log(`Created ${all.length} products`);
 }
 
 main()

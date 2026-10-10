@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { productController } from "@/server/presentation/controller/productController";
+import HeroSlider from "@/components/HeroSlider";
 import ProductGrid from "@/components/ProductGrid";
 import { CATEGORIES } from "@/lib/utils";
 
@@ -11,32 +12,8 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-10">
-      {/* Hero — US flag colors: Old Glory Blue + Old Glory Red */}
-      <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A3161] via-[#B31942] to-[#0A3161] text-white">
-        <div className="grid gap-6 p-8 sm:grid-cols-2 sm:p-12">
-          <div>
-            <h1 className="text-3xl font-extrabold sm:text-5xl">Everything tech at Kirk&apos;s Ecommerce Shop.</h1>
-            <p className="mt-3 text-white/90">Laptops, phones, gaming gear & accessories — simulated checkout with card or e-wallet.</p>
-            <div className="mt-6 flex gap-3">
-              <Link href="/products" className="rounded-lg bg-white px-5 py-3 text-sm font-bold text-[#0A3161] hover:bg-red-50">
-                Shop products
-              </Link>
-              <Link href="/track-order" className="rounded-lg border border-white/40 px-5 py-3 text-sm font-bold hover:bg-white/10">
-                Track order
-              </Link>
-            </div>
-            <p className="mt-4 text-xs text-white/80">Demo login: customer@example.com / 123456 · Test card 4111 1111 1111 1111</p>
-          </div>
-          <div className="hidden items-center justify-center sm:flex">
-            <div className="grid grid-cols-2 gap-3">
-              {featured.slice(0, 4).map((p) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={p.id} src={p.image} alt={p.name} className="h-32 w-32 rounded-xl object-cover shadow-lg" />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero slideshow — store banner + drone / autonomous-car delivery ads */}
+      <HeroSlider />
 
       {/* Categories */}
       <section>

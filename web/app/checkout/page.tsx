@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CartDTO, ShippingInfo } from "@/lib/types";
-import { formatVND, calcShipping, PAYMENT_LABELS } from "@/lib/utils";
+import { formatVND, calcDeliveryFee, DELIVERY_INFO, PAYMENT_LABELS } from "@/lib/utils";
 import ShippingForm from "@/components/ShippingForm";
+import DeliverySelector from "@/components/DeliverySelector";
 import PaymentSelector, { PayMethod, validateCard, CardInfo } from "@/components/PaymentSelector";
 import { useToast } from "@/components/Toast";
 
@@ -17,6 +18,7 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState<PayMethod>("CARD");
   const [card, setCard] = useState<CardInfo>({ holder: "", number: "4111 1111 1111 1111", expiry: "12/30", cvv: "123" });
   const [walletConfirmed, setWalletConfirmed] = useState(false);
+  const [delivery, setDelivery] = useState("STANDARD");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -43,7 +45,7 @@ export default function CheckoutPage() {
   }, [router, toast]);
 
   const subtotal = cart?.subtotal ?? 0;
-  const shippingFee = calcShipping(subtotal);
+  const shippingFee = calcDeliveryFee(delivery, subtotal);
   const total = subtotal + shippingFee;
 
   const placeOrder = async () => {
@@ -59,7 +61,7 @@ export default function CheckoutPage() {
     const r = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shipping, paymentMethod: method, card, walletConfirmed })
+      body: JSON.stringify({ shipping, paymentMethod: method, deliveryMethod: delivery, card, walletConfirmed })
     });
     const d = await r.json();
     setPlacing(false);
@@ -93,6 +95,7 @@ export default function CheckoutPage() {
             <div className="rounded-xl border bg-white p-4">
               <h2 className="mb-3 font-bold">Step 1: Shipping Information</h2>
               <ShippingForm initial={shipping} onChange={setShipping} onValidChange={setShipValid} />
+              <DeliverySelector value={delivery} onChange={setDelivery} subtotal={subtotal} address={[shipping.address, shipping.ward, shipping.district, shipping.city].filter(Boolean).join(", ")} />
               <button onClick={() => { if (!shipValid) setError("Please complete shipping information."); else { setError(""); setStep(2); } }}
                 className="mt-4 w-full rounded-lg bg-[#0A3161] py-2.5 text-sm font-bold text-white hover:bg-[#B31942]">
                 Continue to Payment
@@ -119,7 +122,8 @@ export default function CheckoutPage() {
                 <p><b>Ship to:</b> {shipping.fullName}, {shipping.phone}</p>
                 <p>{shipping.address}, {shipping.ward}, {shipping.district}, {shipping.city}</p>
                 {shipping.note && <p className="text-gray-500">Note: {shipping.note}</p>}
-                <p className="mt-1"><b>Payment:</b> {PAYMENT_LABELS[method]}</p>
+                <p className="mt-1"><b>Delivery:</b> {DELIVERY_INFO[delivery as keyof typeof DELIVERY_INFO].icon} {DELIVERY_INFO[delivery as keyof typeof DELIVERY_INFO].label}</p>
+                <p><b>Payment:</b> {PAYMENT_LABELS[method]}</p>
                 <button onClick={() => setStep(1)} className="mt-1 text-xs font-semibold text-[#0A3161] hover:underline">Edit</button>
               </div>
               <div className="mt-3 space-y-2">

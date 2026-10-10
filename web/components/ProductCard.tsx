@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ProductDTO } from "@/lib/types";
 import { formatVND } from "@/lib/utils";
 import { useToast } from "./Toast";
+import { COMPARE_MAX, readCompare, writeCompare } from "@/lib/clientCart";
 
 export function stars(rating: number) {
   const full = Math.round(rating);
@@ -13,6 +15,20 @@ export function stars(rating: number) {
 export default function ProductCard({ product }: { product: ProductDTO }) {
   const { toast } = useToast();
   const router = useRouter();
+  const [comparing, setComparing] = useState(false);
+  useEffect(() => {
+    const sync = () => setComparing(readCompare().includes(product.id));
+    sync();
+    window.addEventListener("compare-updated", sync);
+    return () => window.removeEventListener("compare-updated", sync);
+  }, [product.id]);
+
+  const toggleCompare = () => {
+    const ids = readCompare();
+    if (ids.includes(product.id)) return writeCompare(ids.filter((i) => i !== product.id));
+    if (ids.length >= COMPARE_MAX) return toast(`You can compare up to ${COMPARE_MAX} products.`, "error");
+    writeCompare([...ids, product.id]);
+  };
 
   const addToCart = async () => {
     if (product.stock <= 0) {
@@ -73,6 +89,9 @@ export default function ProductCard({ product }: { product: ProductDTO }) {
         <p className={`text-xs font-medium ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}>
           {product.stock > 0 ? `In stock (${product.stock})` : "Out of Stock"}
         </p>
+        <label className="mt-1 flex cursor-pointer items-center gap-1.5 text-xs text-gray-600">
+          <input type="checkbox" checked={comparing} onChange={toggleCompare} /> Compare
+        </label>
         <div className="mt-2 flex gap-2">
           <Link href={`/products/${product.id}`} className="flex-1 rounded-lg border px-2 py-2 text-center text-xs font-semibold hover:bg-gray-50">
             View Details

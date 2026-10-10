@@ -62,6 +62,7 @@ model Order {
   totalAmount      Float
   subtotal         Float       @default(0)
   shippingFee      Float       @default(0)
+  deliveryMethod   String      @default("STANDARD") // STANDARD | DRONE | ROBOT_CAR
   paymentMethod    String // "CARD" | "MOMO" | "ZALOPAY" | "VNPAY"
   paymentStatus    String      @default("PENDING") // PENDING | PAID | FAILED
   orderStatus      String      @default("Order Placed") // Order Placed, Confirmed, Processing, Shipped, Out for Delivery, Delivered

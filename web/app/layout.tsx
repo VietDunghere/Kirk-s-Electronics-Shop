@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ToastProvider } from "@/components/Toast";
 import ChatWidget from "@/components/ChatWidget";
+import CompareBar from "@/components/CompareBar";
 
 export const metadata: Metadata = {
   title: "Kirk's Ecommerce Shop — Demo E-commerce",
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navbar />
           <main className="mx-auto min-h-[70vh] max-w-7xl px-4 py-6">{children}</main>
           <Footer />
+          <CompareBar />
           <ChatWidget />
         </ToastProvider>
       </body>

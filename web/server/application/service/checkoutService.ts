@@ -14,11 +14,13 @@ import {
   type CardInput,
   type ShippingInput
 } from "../../domain/order/order";
+import { isDeliveryMethod } from "../../domain/order/delivery";
 import { AppError } from "./appError";
 
 export type CheckoutInput = {
   shipping: ShippingInput;
   paymentMethod: string;
+  deliveryMethod?: string;
   card?: CardInput;
   walletConfirmed?: boolean;
 };
@@ -53,6 +55,8 @@ export const checkoutService = {
 
   async checkout(cartID: number, userId: number, input: CheckoutInput): Promise<Order> {
     const shipping = checkoutService.enterShipping(input.shipping);
+    const deliveryMethod = input.deliveryMethod ?? "STANDARD";
+    if (!isDeliveryMethod(deliveryMethod)) throw new AppError(400, "Please choose a delivery method.");
     const payment = checkoutService.pay(input.paymentMethod, input.card, input.walletConfirmed);
 
     const cart = await cartRepository.findById(cartID);
@@ -66,6 +70,7 @@ export const checkoutService = {
       totalAmount: 0,
       subtotal: 0,
       shippingFee: 0,
+      deliveryMethod,
       paymentMethod: payment.method,
       paymentStatus: "PAID", // simulated payment always succeeds after validation
       orderStatus: "Order Placed",

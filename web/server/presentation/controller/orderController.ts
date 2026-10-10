@@ -6,7 +6,7 @@ import { fail, requireSession } from "./http";
 export const orderController = {
   async listMine() {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       return NextResponse.json({ orders: await orderService.listMine(session.id) });
     } catch (e) {
       return fail(e);
@@ -16,7 +16,7 @@ export const orderController = {
   // Private: order detail — only the owner can view.
   async detail(rawId: string) {
     try {
-      const session = requireSession();
+      const session = await requireSession();
       return NextResponse.json({ order: await orderService.getForOwner(session.id, Number(rawId)) });
     } catch (e) {
       return fail(e);
