@@ -80,6 +80,12 @@ One-liner alternative: `npm run db:setup` (migrate + seed).
 
 Build check: `npm run build` · `npx tsc --noEmit`.
 
+### Chatbot with NVIDIA NIM
+
+The chatbot uses NVIDIA's hosted NIM Chat Completions API. Get an API key at [build.nvidia.com](https://build.nvidia.com/), then set `NVIDIA_API_KEY` in `.env`. The default model is `openai/gpt-oss-20b`; set `NVIDIA_MODEL` to another model ID available to your key if desired. Restart `npm run dev` after changing `.env`. Keep the key server-side and do not add it to variables prefixed with `NEXT_PUBLIC_`.
+
+Without a key, the chatbot still returns product suggestions based on local search but does not generate AI replies. The website continues to run on localhost; AI replies require an outbound request to NVIDIA's API.
+
 ## Test accounts & payment
 
 | Role | Email | Password |
