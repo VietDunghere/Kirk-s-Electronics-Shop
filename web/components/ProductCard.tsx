@@ -90,7 +90,7 @@ export default function ProductCard({ product }: { product: ProductDTO }) {
           {product.stock > 0 ? `In stock (${product.stock})` : "Out of Stock"}
         </p>
         <label className="mt-1 flex cursor-pointer items-center gap-1.5 text-xs text-gray-600">
-          <input type="checkbox" checked={comparing} onChange={toggleCompare} /> ⚖ Compare
+          <input type="checkbox" checked={comparing} onChange={toggleCompare} /> Compare
         </label>
         <div className="mt-2 flex gap-2">
           <Link href={`/products/${product.id}`} className="flex-1 rounded-lg border px-2 py-2 text-center text-xs font-semibold hover:bg-gray-50">

@@ -4,7 +4,7 @@ export const DELIVERY_METHODS = ["STANDARD", "DRONE", "ROBOT_CAR"] as const;
 export type DeliveryMethod = (typeof DELIVERY_METHODS)[number];
 
 export const DELIVERY_INFO: Record<DeliveryMethod, { label: string; icon: string; eta: string; description: string }> = {
-  STANDARD: { label: "Standard delivery", icon: "🚚", eta: "2-4 days", description: "Courier delivery. Free over 500,000 VND." },
+  STANDARD: { label: "Standard delivery", icon: "", eta: "2-4 days", description: "Courier delivery. Free over 500,000 VND." },
   DRONE: { label: "Drone delivery", icon: "🚁", eta: "~3 minutes (demo)", description: "Flies straight from the Kirk Drone Hub to your door." },
   ROBOT_CAR: { label: "Autonomous electric car", icon: "🚙", eta: "~4 minutes (demo)", description: "Self-driving electric car, zero emission." }
 };

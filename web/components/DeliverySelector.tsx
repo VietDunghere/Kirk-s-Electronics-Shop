@@ -4,9 +4,9 @@ import { DELIVERY_INFO, DELIVERY_METHODS, calcDeliveryFee, formatVND } from "@/l
 import type { DeliveryAdvice } from "@/server/application/service/deliveryAdvisorService";
 
 const PRIORITIES = [
-  { value: "fast", label: "⚡ Fastest" },
-  { value: "cheap", label: "💰 Cheapest" },
-  { value: "eco", label: "🌱 Eco-friendly" }
+  { value: "fast", label: "Fastest" },
+  { value: "cheap", label: "Cheapest" },
+  { value: "eco", label: "Eco-friendly" }
 ];
 
 export default function DeliverySelector({
@@ -61,9 +61,9 @@ export default function DeliverySelector({
               className={`relative rounded-xl border-2 p-3 text-left transition ${active ? "border-[#0A3161] bg-[#E8EDF3]" : "border-gray-200 bg-white hover:border-gray-300"} ${blocked ? "opacity-60" : ""}`}
             >
               {advice?.recommended === m && (
-                <span className="absolute -top-2 right-2 rounded-full bg-[#B31942] px-2 py-0.5 text-[10px] font-bold text-white">🤖 AI pick</span>
+                <span className="absolute -top-2 right-2 rounded-full bg-[#B31942] px-2 py-0.5 text-[10px] font-bold text-white">AI pick</span>
               )}
-              <span className="text-2xl">{info.icon}</span>
+              {info.icon && <span className="text-2xl">{info.icon}</span>}
               <p className="mt-1 text-sm font-bold">{info.label}</p>
               <p className="text-xs text-gray-500">{info.description}</p>
               <p className="mt-1 text-xs text-gray-600">ETA: {info.eta}</p>
@@ -77,7 +77,7 @@ export default function DeliverySelector({
 
       <div className="mt-3 rounded-xl border border-dashed border-[#B31942] bg-red-50/40 p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold">🤖 Not sure? Let AI choose</span>
+          <span className="text-sm font-bold">Not sure? Let AI choose</span>
           <select value={priority} onChange={(e) => setPriority(e.target.value)} className="rounded-lg border px-2 py-1 text-xs">
             {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>

@@ -360,25 +360,25 @@ export default function ChatWidget() {
 
       <button
         onClick={() => (open ? requestClose() : setOpen(true))}
-        aria-label={open ? "Đóng chat" : "Mở chat tư vấn"}
-        title={open ? "Đóng chat" : "Chat với trợ lý"}
+        aria-label={open ? "Close chat" : "Open chat"}
+        title={open ? "Close chat" : "Chat with the assistant"}
         className="relative flex items-end justify-center text-5xl transition-transform hover:scale-105"
       >
         {imgOk ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src="/kirk.png"
-            alt="Chat với trợ lý"
+            alt="Chat with the assistant"
             onError={() => setImgOk(false)}
             className="h-32 w-auto select-none drop-shadow-xl md:h-44"
             draggable={false}
           />
         ) : (
-          "💬"
+          "Chat"
         )}
         {!open && (
           <span className="pointer-events-none absolute -top-11 right-2 whitespace-nowrap rounded-2xl rounded-br-sm border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-usa-navy shadow-lg">
-            Tôi là chatbot tư vấn
+            I'm your shopping advisor bot
           </span>
         )}
         {open && (

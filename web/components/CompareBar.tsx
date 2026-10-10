@@ -20,7 +20,7 @@ export default function CompareBar() {
   if (ids.length === 0) return null;
   return (
     <div className="fixed bottom-4 left-4 z-40 flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-lg">
-      <span className="text-sm font-semibold">⚖ Compare ({ids.length}/{COMPARE_MAX})</span>
+      <span className="text-sm font-semibold">Compare ({ids.length}/{COMPARE_MAX})</span>
       {ids.length >= 2 ? (
         <Link href={`/compare?ids=${ids.join(",")}`} className="rounded-lg bg-[#0A3161] px-3 py-1.5 text-sm font-bold text-white hover:bg-[#B31942]">
           AI compare

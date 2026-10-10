@@ -46,11 +46,11 @@ export default function PaymentSelector({
           onClick={() => setMethod("CARD")}
           className={`rounded-xl border-2 p-4 text-left ${method === "CARD" ? "border-[#0A3161] bg-[#E8EDF3]" : "border-gray-200"}`}
         >
-          <p className="font-bold">💳 Pay by Card</p>
+          <p className="font-bold">Pay by Card</p>
           <p className="text-xs text-gray-500">Visa / Mastercard (simulated)</p>
         </button>
         <div className={`rounded-xl border-2 p-4 ${method !== "CARD" ? "border-[#0A3161] bg-[#E8EDF3]" : "border-gray-200"}`}>
-          <p className="font-bold">📱 Pay by E-wallet</p>
+          <p className="font-bold">Pay by E-wallet</p>
           <div className="mt-2 flex gap-2">
             {wallets.map((w) => (
               <button

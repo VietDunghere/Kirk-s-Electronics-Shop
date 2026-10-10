@@ -8,11 +8,11 @@ import type { BundleResult } from "@/server/application/service/bundleService";
 
 const USAGES = [
   { value: "", label: "Auto-detect from my text" },
-  { value: "gaming", label: "🎮 Gaming setup" },
-  { value: "study", label: "📚 Study / office" },
-  { value: "creator", label: "🎬 Video & photo creator" },
-  { value: "mobile", label: "📱 Mobile & accessories" },
-  { value: "entertainment", label: "🍿 Home entertainment" }
+  { value: "gaming", label: "Gaming setup" },
+  { value: "study", label: "Study / office" },
+  { value: "creator", label: "Video & photo creator" },
+  { value: "mobile", label: "Mobile & accessories" },
+  { value: "entertainment", label: "Home entertainment" }
 ];
 const EXAMPLES = ["setup gaming 30 triệu", "build PC gaming 45 triệu", "laptop cho sinh viên 25 triệu", "quay chụp du lịch 40 triệu", "giải trí xem phim 15 triệu"];
 
@@ -57,7 +57,7 @@ export default function BundlePage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold">🤖 AI setup builder</h1>
+      <h1 className="text-2xl font-bold">AI setup builder</h1>
       <p className="mt-1 text-sm text-gray-500">Tell us what you need and your budget. We pick a full set from the shop&apos;s real products.</p>
 
       <form onSubmit={(e) => { e.preventDefault(); build(); }} className="mt-4 space-y-3 rounded-xl border bg-white p-4">
@@ -86,7 +86,7 @@ export default function BundlePage() {
       {data && (
         <div className="mt-4 space-y-4">
           <div className="rounded-xl border-l-4 border-[#B31942] bg-white p-4 shadow-sm">
-            <p className="text-sm font-bold">🤖 {data.usageLabel} {data.usedAI ? "" : <span className="font-normal text-gray-400">(rule-based, no AI key)</span>}</p>
+            <p className="text-sm font-bold">{data.usageLabel} {data.usedAI ? "" : <span className="font-normal text-gray-400">(rule-based, no AI key)</span>}</p>
             <p className="mt-1 text-sm">{data.summary}</p>
           </div>
 
@@ -94,7 +94,7 @@ export default function BundlePage() {
             {data.options.map((o, i) => (
               <button key={o.id} onClick={() => setTab(i)}
                 className={`rounded-xl border-2 px-4 py-2 text-left text-sm transition ${tab === i ? "border-[#0A3161] bg-[#E8EDF3]" : "border-gray-200 bg-white hover:border-gray-300"}`}>
-                <span className="block text-xs font-bold uppercase text-[#B31942]">Set {i + 1} · {o.source === "ai" ? "🤖 AI" : "template"}</span>
+                <span className="block text-xs font-bold uppercase text-[#B31942]">Set {i + 1} · {o.source === "ai" ? "AI" : "template"}</span>
                 <span className="block font-semibold">{o.label}</span>
                 <span className="block text-xs text-gray-500">{formatVND(o.total)} · {o.items.length} items</span>
               </button>
@@ -103,7 +103,7 @@ export default function BundlePage() {
 
           {option && (
             <>
-              {option.why && <p className="rounded-lg bg-white px-3 py-2 text-sm text-gray-700 shadow-sm">🤖 {option.why}</p>}
+              {option.why && <p className="rounded-lg bg-white px-3 py-2 text-sm text-gray-700 shadow-sm">{option.why}</p>}
               <div className="grid gap-3 sm:grid-cols-2">
                 {option.items.map((i) => (
                   <div key={i.product.id} className="flex gap-3 rounded-xl border bg-white p-3">
@@ -130,7 +130,7 @@ export default function BundlePage() {
                 </div>
                 <button onClick={addAll} disabled={adding}
                   className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-60">
-                  {adding ? "Adding..." : `🛒 Add Set ${tab + 1} to cart`}
+                  {adding ? "Adding..." : `Add Set ${tab + 1} to cart`}
                 </button>
               </div>
             </>

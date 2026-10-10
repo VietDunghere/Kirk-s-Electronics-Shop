@@ -41,7 +41,7 @@ function CompareInner() {
     if (data.best.cheapest === id) b.push("Rẻ nhất");
     if (data.best.topRated === id) b.push("Đánh giá cao nhất");
     if (data.best.bestSeller === id) b.push("Bán chạy nhất");
-    if (data.best.bestValue === id) b.push("⭐ Đáng tiền nhất");
+    if (data.best.bestValue === id) b.push("Đáng tiền nhất");
     return b;
   };
 
@@ -56,7 +56,7 @@ function CompareInner() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">🤖 AI product comparison</h1>
+      <h1 className="text-2xl font-bold">AI product comparison</h1>
       <p className="mt-1 text-sm text-gray-500">Table from real shop data. The AI writes the verdict for your need.</p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -74,7 +74,7 @@ function CompareInner() {
       {data && (
         <>
           <div className="mt-4 rounded-xl border-l-4 border-[#B31942] bg-white p-4 shadow-sm">
-            <p className="text-sm font-bold">🤖 Verdict {data.usedAI ? "" : <span className="font-normal text-gray-400">(rule-based, no AI key)</span>}</p>
+            <p className="text-sm font-bold">Verdict {data.usedAI ? "" : <span className="font-normal text-gray-400">(rule-based, no AI key)</span>}</p>
             <p className="mt-1 whitespace-pre-line text-sm">{data.verdict}</p>
           </div>
 
