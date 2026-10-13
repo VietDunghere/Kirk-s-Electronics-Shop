@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PC_PRODUCTS } from "./pcProducts";
+import { EXTRA_PRODUCTS } from "./extraProducts";
 
 const prisma = new PrismaClient();
 
@@ -308,28 +309,24 @@ const products: SeedProduct[] = [
 
 async function main() {
   console.log("Seeding database...");
-  await prisma.orderItem.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.cartItem.deleteMany();
-  await prisma.cart.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.user.deleteMany();
-
-  const passwordHash = await bcrypt.hash("123456", 10);
-  await prisma.user.create({
-    data: {
-      fullName: "Test Customer",
-      email: "customer@example.com",
-      passwordHash
-    }
-  });
-  console.log("Created test user: customer@example.com / 123456");
-
-  const all = [...products, ...PC_PRODUCTS];
-  for (const p of all) {
-    await prisma.product.create({ data: p });
+  const demoUser = await prisma.user.findUnique({ where: { email: "customer@example.com" }, select: { id: true } });
+  if (!demoUser) {
+    const passwordHash = await bcrypt.hash("123456", 10);
+    await prisma.user.create({
+      data: { fullName: "Test Customer", email: "customer@example.com", passwordHash }
+    });
+    console.log("Created test user: customer@example.com / 123456");
   }
-  console.log(`Created ${all.length} products`);
+
+  const all = [...products, ...PC_PRODUCTS, ...EXTRA_PRODUCTS];
+  let added = 0;
+  for (const p of all) {
+    const existing = await prisma.product.findFirst({ where: { name: p.name }, select: { id: true } });
+    if (existing) continue;
+    await prisma.product.create({ data: p });
+    added++;
+  }
+  console.log(`Added ${added} products; ${all.length - added} already existed.`);
 }
 
 main()
