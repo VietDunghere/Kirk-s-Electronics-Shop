@@ -11,7 +11,9 @@
     "db:migrate": "prisma migrate dev --name init",
     "db:seed": "prisma db seed",
     "db:add-pc": "tsx prisma/addPcProducts.ts",
-    "db:setup": "prisma migrate dev --name init && prisma db seed"
+    "db:add-extra": "tsx prisma/addExtraProducts.ts",
+    "db:vp": "python prisma/buildVpDatabase.py",
+    "db:setup": "prisma migrate dev --name init && prisma db seed && npm run db:vp"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

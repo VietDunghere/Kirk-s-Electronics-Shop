@@ -72,11 +72,26 @@ Order statuses: `Order Placed → Confirmed → Processing → Shipped → Out f
 ```bash
 npm install
 npx prisma migrate dev --name init   # creates prisma/dev.db
-npx prisma db seed                   # 20 products + test customer
+npx prisma db seed                   # demo catalogue + test customer; preserves existing data
 npm run dev                          # open http://localhost:3000
 ```
 
-One-liner alternative: `npm run db:setup` (migrate + seed).
+One-liner alternative: `npm run db:setup` (migrate, seed, VP database).
+
+To add only the 60 extra catalogue products to an existing database, run `npm run db:add-extra`.
+The command is safe to repeat and preserves users, carts, and orders. These 60 products,
+including their prices, stock, ratings, and sales figures, are fictional classroom demo data.
+The catalogue uses category related stock photos; an image is not a photograph of the exact listed model.
+The checked in Prisma schema and migrations define the database. The SQLite file is local and ignored by Git.
+
+The database diagram in `VP/Screenshot 2026-10-13 102115.png` has a different,
+eight-table schema. Run `npm run db:vp` to create `prisma/vp_catalog.db` with exactly
+those eight tables and their diagram column names and types. The command copies
+products, customers, carts, orders, shipping and simulated payment records from
+`prisma/dev.db`; repeat runs keep existing rows. Its schema is in `prisma/vp_schema.sql`.
+The website continues to use `prisma/dev.db`, which has additional fields needed
+for images, categories, authentication and checkout. Payment card numbers and CVVs
+are never copied to the VP database.
 
 Build check: `npm run build` · `npx tsc --noEmit`.
 

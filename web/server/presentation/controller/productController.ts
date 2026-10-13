@@ -19,7 +19,7 @@ export const productController = {
         maxPrice: Number(searchParams.get("maxPrice") || 0),
         featured: searchParams.get("featured") === "1",
         sort: searchParams.get("sort") || "newest", // newest | price-asc | price-desc | name | popular
-        limit: Number(searchParams.get("limit") || 100)
+        limit: Number(searchParams.get("limit") || 250)
       });
       return NextResponse.json({ products });
     } catch (e) {

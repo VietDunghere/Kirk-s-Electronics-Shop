@@ -7,7 +7,7 @@ export type ProductQuery = ProductFilter & { sort?: string; limit?: number };
 export const productService = {
   async search(query: ProductQuery) {
     const { sort, limit, ...filter } = query;
-    return productRepository.search(filter, sort || "newest", Math.min(limit ?? 100, 100));
+    return productRepository.search(filter, sort || "newest", Math.min(limit ?? 250, 250));
   },
 
   async getDetail(id: number) {
