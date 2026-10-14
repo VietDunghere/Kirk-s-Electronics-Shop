@@ -3,11 +3,63 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gray-50 text-slate-900;
+  @apply text-slate-900 antialiased;
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5FD 45%, #EEF2FF 100%);
+  background-attachment: fixed;
 }
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Subtle dotted grid for selected background sections */
+.dot-grid {
+  background-image: radial-gradient(rgba(10, 49, 97, 0.10) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.dot-grid-fade {
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 20%, black 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 90% 90% at 50% 20%, black 30%, transparent 75%);
+}
+
+/* Scroll fade-in (used by <Reveal/>). Transform-only so layout never shifts. */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Smooth transitions for interactive elements */
+a, button {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  /* Keep content visible: no hover lift / image zoom for reduced motion. */
+  .group:hover {
+    transform: none !important;
+  }
+  .group:hover img {
+    transform: none !important;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

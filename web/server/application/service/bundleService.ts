@@ -189,15 +189,17 @@ export const bundleService = {
 
     if (!options.length) {
       const need = Math.min(...unaffordable.map((p) => p.minCoreCost).filter((n) => n > 0));
-      throw new AppError(
-        400,
-        `Ngân sách ${vnd(budget)} chưa đủ cho bộ ${USAGE_LABEL[usage]}.` + (Number.isFinite(need) ? ` Cần tối thiểu khoảng ${vnd(need)}.` : "")
-      );
+      const needText = Number.isFinite(need)
+        ? ` Cần tối thiểu khoảng ${vnd(need)}.`
+        : ` Shop hiện không có đủ linh kiện cho bộ ${USAGE_LABEL[usage]} này, bạn thử mục đích khác nhé.`;
+      throw new AppError(400, `Ngân sách ${vnd(budget)} chưa đủ cho bộ ${USAGE_LABEL[usage]}.${needText}`);
     }
     if (unaffordable.length && !options.some((o) => o.source === "ai")) {
-      options[options.length - 1].notes.push(
-        `Phương án khác chưa đủ ngân sách: ${unaffordable.map((p) => `${p.label} (cần ~${vnd(p.minCoreCost)})`).join("; ")}.`
-      );
+      const missing = unaffordable
+        .filter((p) => p.minCoreCost > 0)
+        .map((p) => `${p.label} (cần ~${vnd(p.minCoreCost)})`);
+      if (missing.length)
+        options[options.length - 1].notes.push(`Phương án khác chưa đủ ngân sách: ${missing.join("; ")}.`);
     }
 
     const fallback =

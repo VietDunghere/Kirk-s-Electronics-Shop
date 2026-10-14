@@ -8,6 +8,7 @@ import { randomUUID } from "crypto";
 import { productRepository } from "../../infrastructure/repository/productRepository";
 import { cartService } from "./cartService";
 import { recommendationService } from "./recommendationService";
+import { detectBrandRules, detectOS, matchesBrandAndOS } from "./brandFilter";
 import { AppError } from "./appError";
 import type { ChatProduct, CartAction, CartProposal } from "./chatService";
 

@@ -2,6 +2,10 @@ import Link from "next/link";
 import { productController } from "@/server/presentation/controller/productController";
 import HeroSlider from "@/components/HeroSlider";
 import ProductGrid from "@/components/ProductGrid";
+import BenefitsBar from "@/components/BenefitsBar";
+import CategoryGrid from "@/components/CategoryGrid";
+import SectionHeading from "@/components/SectionHeading";
+import Reveal from "@/components/Reveal";
 import { CATEGORIES } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -11,39 +15,46 @@ export default async function HomePage() {
   const ser = (p: (typeof featured)[number]) => ({ ...p, createdAt: p.createdAt.toISOString() });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 sm:space-y-12">
       {/* Hero slideshow — store banner + drone / autonomous-car delivery ads */}
-      <HeroSlider />
+      <Reveal>
+        <div className="rounded-2xl shadow-[0_24px_48px_-24px_rgba(10,49,97,0.35)] ring-1 ring-[#0A3161]/10">
+          <HeroSlider />
+        </div>
+      </Reveal>
+
+      {/* Shopping benefits — neutral wording, demo capabilities only */}
+      <BenefitsBar />
 
       {/* Categories */}
       <section>
-        <h2 className="mb-3 text-xl font-bold">Shop by category</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {CATEGORIES.map((c) => (
-            <Link key={c} href={`/products?category=${encodeURIComponent(c)}`}
-              className="rounded-xl border bg-white p-4 text-center font-semibold shadow-sm hover:border-[#B31942] hover:text-[#B31942]">
-              {c}
-            </Link>
-          ))}
-        </div>
+        <SectionHeading eyebrow="Browse" title="Shop by category" />
+        <CategoryGrid categories={CATEGORIES} />
       </section>
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Featured products</h2>
-          <Link href="/products" className="text-sm font-semibold text-[#0A3161] hover:underline">View all →</Link>
-        </div>
-        <ProductGrid products={featured.map(ser)} />
+        <SectionHeading
+          eyebrow="Hand-picked"
+          title="Featured products"
+          action={<Link href="/products" className="shrink-0 rounded-lg border border-slate-200 bg-white/80 px-3 py-1.5 text-sm font-semibold text-[#0A3161] hover:border-[#B31942]/40 hover:text-[#B31942]">View all →</Link>}
+        />
+        <Reveal delay={80}>
+          <ProductGrid products={featured.map(ser)} />
+        </Reveal>
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-bold">New products</h2>
-        <ProductGrid products={newest.map(ser)} />
+        <SectionHeading eyebrow="Fresh arrivals" title="New products" />
+        <Reveal delay={80}>
+          <ProductGrid products={newest.map(ser)} />
+        </Reveal>
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-bold">Best-selling products</h2>
-        <ProductGrid products={bestSellers.map(ser)} />
+        <SectionHeading eyebrow="Customer favourites" title="Best-selling products" />
+        <Reveal delay={80}>
+          <ProductGrid products={bestSellers.map(ser)} />
+        </Reveal>
       </section>
     </div>
   );
