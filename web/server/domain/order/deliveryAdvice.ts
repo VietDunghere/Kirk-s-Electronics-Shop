@@ -59,6 +59,9 @@ export function totalWeightKg(items: AdviceItem[]): number {
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
+/** A fee at or above this counts as "most expensive" when the advisor compares prices (the dearest fee is about 100,000 VND). */
+const FEE_SCALE = 150_000;
+
 export function adviseMethods(ctx: AdviceContext): MethodAdvice[] {
   const weight = totalWeightKg(ctx.items);
   const fragile = ctx.items.some(isFragile);
@@ -100,7 +103,7 @@ export function adviseMethods(ctx: AdviceContext): MethodAdvice[] {
 
     const speed = base[method].speed;
     const eco = base[method].eco;
-    const cost = 1 - clamp01(fee / 50000);
+    const cost = 1 - clamp01(fee / FEE_SCALE);
     const score = available ? Math.round((w.s * speed + w.c * cost + w.e * eco) * 100 * (1 - penalty)) / 100 : 0;
     return { method, available, fee, score, reasons, warnings };
   });

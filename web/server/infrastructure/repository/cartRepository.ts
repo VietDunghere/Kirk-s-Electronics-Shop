@@ -1,6 +1,6 @@
 // infrastructure.repository — CartRepository (tables Cart, CartItem): findById / save per Hình 1. Prisma calls only.
 import { prisma } from "../database/prisma";
-import { Cart, CartItem } from "../../domain/cart/cart";
+import { Cart } from "../../domain/cart/cart";
 
 const withItems = { items: { include: { product: true } } } as const;
 
@@ -22,32 +22,16 @@ export const cartRepository = {
     return Cart.fromRecord(row);
   },
 
-  async findItem(cartId: number, productId: number): Promise<CartItem | null> {
-    const i = await prisma.cartItem.findUnique({
-      where: { cartId_productId: { cartId, productId } },
-      include: { product: true }
-    });
-    return i ? new CartItem(i.id, i.cartId, i.productId, i.quantity, i.product) : null;
-  },
-
-  /** Persists the cart: items no longer in the cart are deleted, the others get their quantity. */
+  /** Persists the cart in one transaction: lines removed from the cart are deleted, changed lines get their quantity, new lines (id 0) are created. */
   async save(cart: Cart): Promise<Cart> {
+    const saved = cart.items.filter((i) => i.id > 0);
     await prisma.$transaction([
-      prisma.cartItem.deleteMany({ where: { cartId: cart.id, id: { notIn: cart.items.map((i) => i.id) } } }),
-      ...cart.items.map((i) => prisma.cartItem.update({ where: { id: i.id }, data: { quantity: i.quantity } }))
+      prisma.cartItem.deleteMany({ where: { cartId: cart.id, id: { notIn: saved.map((i) => i.id) } } }),
+      ...saved.map((i) => prisma.cartItem.update({ where: { id: i.id }, data: { quantity: i.quantity } })),
+      ...cart.items
+        .filter((i) => i.id === 0)
+        .map((i) => prisma.cartItem.create({ data: { cartId: cart.id, productId: i.productId, quantity: i.quantity } }))
     ]);
     return cart;
-  },
-
-  addItem(cartId: number, productId: number, quantity: number) {
-    return prisma.cartItem.create({ data: { cartId, productId, quantity } });
-  },
-
-  updateItemQuantity(itemId: number, quantity: number) {
-    return prisma.cartItem.update({ where: { id: itemId }, data: { quantity } });
-  },
-
-  removeItem(cartId: number, productId: number) {
-    return prisma.cartItem.deleteMany({ where: { cartId, productId } });
   }
 };

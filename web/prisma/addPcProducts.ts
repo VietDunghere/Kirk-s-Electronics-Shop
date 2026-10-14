@@ -8,7 +8,10 @@ async function main() {
   let added = 0;
   for (const p of PC_PRODUCTS) {
     const exists = await prisma.product.findFirst({ where: { name: p.name } });
-    if (exists) continue;
+    if (exists) {
+      await prisma.product.update({ where: { id: exists.id }, data: { image: p.image } }); // keep the photo path in sync
+      continue;
+    }
     await prisma.product.create({ data: p });
     added++;
   }

@@ -56,7 +56,7 @@ export const deliveryAdvisorService = {
       price: i.product.price,
       quantity: i.quantity
     }));
-    const subtotal = cart.calculateSubtotal();
+    const subtotal = cart.calculateTotal();
     const weather = await currentWeather();
     const distanceKm = estimateDistanceKm(address);
 

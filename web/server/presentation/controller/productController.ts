@@ -27,6 +27,16 @@ export const productController = {
     }
   },
 
+  /** POST { image: "data:image/...;base64,..." } -> products that look like the photo. */
+  async searchByImage(req: Request) {
+    try {
+      const body = await req.json().catch(() => ({}));
+      return NextResponse.json(await productService.searchByImage(body.image));
+    } catch (e) {
+      return fail(e, "Image search failed.");
+    }
+  },
+
   async viewDetail(rawId: string) {
     try {
       return NextResponse.json(await productService.getDetail(Number(rawId)));

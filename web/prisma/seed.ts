@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PC_PRODUCTS } from "./pcProducts";
 import { EXTRA_PRODUCTS } from "./extraProducts";
+import { MORE_PRODUCTS, TAB_S9_FE_IMAGE } from "./moreProducts";
 
 const prisma = new PrismaClient();
 
@@ -61,7 +62,7 @@ const PHOTOS: Record<string, string> = {
   "samsung-s25u": wikimedia("Samsung_Galaxy_S25_Ultra.jpg"), // Galaxy S25 Ultra thật (Wikimedia)
   "samsung-fold6": wikimedia("Samsung_Galaxy_Z_Fold_6.jpg"), // Z Fold 6 thật (Wikimedia)
   "samsung-flip6": wikimedia("Samsung_Galaxy_Z_Flip_6.jpg"), // Z Flip 6 thật (Wikimedia)
-  "samsung-tab-s9": wikimedia("Samsung_Galaxy_Tab_S9.png"), // Galaxy Tab S9 thật (Wikimedia)
+  "samsung-tab-s9": TAB_S9_FE_IMAGE, // Galaxy Tab S9 thật (Wikimedia)
   "samsung-buds2": wikimedia("Pair_of_lavender_Samsung_Galaxy_Buds2_Pro.jpg"), // Buds 2 Pro thật (Wikimedia)
   "samsung-watch6": wikimedia("Samsung_Galaxy_Watch_6_Classic.jpg"), // Watch 6 Classic thật (Wikimedia)
   "huawei-pura70": "https://fdn2.gsmarena.com/vv/pics/huawei/huawei-pura70-ultra-1.jpg", // Pura 70 Ultra official render lớn (GSMArena)
@@ -318,7 +319,7 @@ async function main() {
     console.log("Created test user: customer@example.com / 123456");
   }
 
-  const all = [...products, ...PC_PRODUCTS, ...EXTRA_PRODUCTS];
+  const all = [...products, ...PC_PRODUCTS, ...EXTRA_PRODUCTS, ...MORE_PRODUCTS];
   let added = 0;
   for (const p of all) {
     const existing = await prisma.product.findFirst({ where: { name: p.name }, select: { id: true } });

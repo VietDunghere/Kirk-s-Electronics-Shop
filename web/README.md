@@ -78,6 +78,9 @@ npm run dev                          # open http://localhost:3000
 
 One-liner alternative: `npm run db:setup` (migrate, seed, VP database).
 
+To add the 21 newest consumer-tech products (consoles, cameras, smart home, wearables...), run `npm run db:add-more`.
+Their photos are stored in `public/products` (credits in `CREDITS.md`).
+
 To add only the 60 extra catalogue products to an existing database, run `npm run db:add-extra`.
 The command is safe to repeat and preserves users, carts, and orders. These 60 products,
 including their prices, stock, ratings, and sales figures, are fictional classroom demo data.

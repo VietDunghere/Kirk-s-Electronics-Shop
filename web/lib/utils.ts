@@ -3,7 +3,7 @@ export function formatVND(n: number): string {
 }
 
 // Business rules live in the domain layer; re-exported so pages and components keep their imports.
-export { SHIPPING_FEE, FREE_SHIP_THRESHOLD, calcShipping, calcDeliveryFee, ORDER_STATUSES } from "@/server/domain/order/order";
+export { SHIPPING_FEE, FREE_SHIP_THRESHOLD, DRONE_FEE, ROBOT_CAR_FEE, calcShipping, calcDeliveryFee, ORDER_STATUSES } from "@/server/domain/order/order";
 
 export const PAYMENT_LABELS: Record<string, string> = {
   CARD: "Credit/Debit Card",

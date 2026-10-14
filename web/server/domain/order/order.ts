@@ -1,4 +1,6 @@
 // domain.order — Order, OrderItem, Shipping, Payment (IDCard / Ewallet): rules only, no I/O.
+import type { Cart } from "../cart/cart";
+
 export const SHIPPING_FEE = 30000;
 export const FREE_SHIP_THRESHOLD = 500000;
 
@@ -18,8 +20,8 @@ export function calcShipping(subtotal: number): number {
   return subtotal >= FREE_SHIP_THRESHOLD ? 0 : SHIPPING_FEE;
 }
 
-export const DRONE_FEE = 49000;
-export const ROBOT_CAR_FEE = 29000;
+export const DRONE_FEE = 99000;
+export const ROBOT_CAR_FEE = 59000;
 
 /** Shipping fee for a delivery method. Drone and autonomous car have a flat fee (never free). */
 export function calcDeliveryFee(method: string | undefined, subtotal: number): number {
@@ -76,15 +78,42 @@ export class Shipping {
     if (!/^[0-9+ ]{9,15}$/.test(this.phone)) return "Invalid phone number.";
     return null;
   }
+
+  updateShippingInfo(address: string): void {
+    this.address = address.trim();
+  }
+
+  /** "Ready" when every required field is valid, otherwise "Incomplete". */
+  getShippingStatus(): string {
+    return this.validate() === null ? "Ready" : "Incomplete";
+  }
 }
 
 // ------------------------------------------------------------------- Payment
 export type CardInput = { holder?: string; number?: string; expiry?: string; cvv?: string };
 
 export abstract class Payment {
+  amount = 0;
+  status = "Pending"; // Pending -> PAID (or Failed)
+
   constructor(public readonly method: string) {}
 
   abstract validate(): string | null;
+
+  /** Simulated payment of `amount`: succeeds when the payment information is valid. No bank or wallet is contacted. */
+  pay(amount: number): boolean {
+    if (amount <= 0 || this.validate() !== null) {
+      this.status = "Failed";
+      return false;
+    }
+    this.amount = amount;
+    this.status = "PAID";
+    return true;
+  }
+
+  getPaymentStatus(): string {
+    return this.status;
+  }
 
   /** Builds the payment for a method name, or null when the method is unknown. */
   static of(method: string, card?: CardInput, walletConfirmed?: boolean): Payment | null {
@@ -135,7 +164,7 @@ export class OrderItem {
     public orderId?: number
   ) {}
 
-  subtotal(): number {
+  calculateSubTotal(): number {
     return this.price * this.quantity;
   }
 }
@@ -168,6 +197,15 @@ export type OrderRecord = OrderFields & {
   items?: { id: number; orderId: number; productId: number; productName: string; price: number; quantity: number }[];
 };
 
+/** What the customer chose at checkout (the result of CheckoutService.enterShipping / pay). */
+export type OrderDetails = {
+  orderCode: string;
+  userId: number;
+  shipping: Shipping;
+  payment: Payment;
+  deliveryMethod: string;
+};
+
 // Declaration merging: the fields above are the data of the Order class below.
 export interface Order extends OrderFields {}
 
@@ -187,13 +225,49 @@ export class Order {
     );
   }
 
+  /**
+   * Hình 1 createOrder(cart): builds the order of a cart (one OrderItem per cart line, prices copied at this moment)
+   * and calculates its total. The payment status stays "PENDING" until the payment succeeds.
+   */
+  static createOrder(cart: Cart, details: OrderDetails): Order {
+    const { shipping, payment } = details;
+    const order = new Order({
+      orderCode: details.orderCode,
+      userId: details.userId,
+      totalAmount: 0,
+      subtotal: 0,
+      shippingFee: 0,
+      deliveryMethod: details.deliveryMethod,
+      paymentMethod: payment.method,
+      paymentStatus: "PENDING",
+      orderStatus: "Order Placed",
+      shippingFullName: shipping.fullName,
+      shippingPhone: shipping.phone,
+      shippingAddress: shipping.address,
+      city: shipping.city,
+      district: shipping.district,
+      ward: shipping.ward,
+      note: shipping.note,
+      sourceCartId: cart.id
+    });
+    for (const item of cart.items) {
+      order.addItem(new OrderItem(item.productId, item.product.name, item.product.price, item.quantity));
+    }
+    order.calculateTotal();
+    return order;
+  }
+
   addItem(item: OrderItem): void {
     this.items.push(item);
   }
 
+  getStatus(): string {
+    return this.orderStatus;
+  }
+
   /** Subtotal of the items + shipping fee (standard delivery is free from 500,000 VND). Returns the total. */
   calculateTotal(): number {
-    this.subtotal = this.items.reduce((sum, item) => sum + item.subtotal(), 0);
+    this.subtotal = this.items.reduce((sum, item) => sum + item.calculateSubTotal(), 0);
     this.shippingFee = calcDeliveryFee(this.deliveryMethod, this.subtotal);
     this.totalAmount = this.subtotal + this.shippingFee;
     return this.totalAmount;

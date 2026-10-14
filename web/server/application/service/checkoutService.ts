@@ -1,13 +1,14 @@
 // application.service — CheckoutService (slide 05: checkout(cartID) : Order; Hình 1: enterShipping, pay).
-// Flow of Hình 2: CartRepository.findById -> validateCartItems -> create OrderItem / Order -> Order.calculateTotal
+// Flow of Hình 2: CartRepository.findById -> validateCartItems -> create Order (+ OrderItems) -> Order.calculateTotal
 //                 -> OrderRepository.save -> Cart.clear -> return Order.
+// enterShipping / pay are the two steps the customer fills in before checkout; the order does not exist yet at that time,
+// so they take no orderID (unlike Hình 1) and only validate. The order is created, paid and saved together by checkout().
 import { cartRepository } from "../../infrastructure/repository/cartRepository";
 import { orderRepository } from "../../infrastructure/repository/orderRepository";
 import type { Cart } from "../../domain/cart/cart";
 import { hasEnoughStock } from "../../domain/product/product";
 import {
   Order,
-  OrderItem,
   Payment,
   Shipping,
   generateOrderCode,
@@ -64,29 +65,16 @@ export const checkoutService = {
     if (cart.userId !== userId) throw new AppError(403, "You do not have permission to check out this cart.");
     validateCartItems(cart);
 
-    const order = new Order({
+    // create Order (one OrderItem per cart line) and calculate its total
+    const order = Order.createOrder(cart, {
       orderCode: generateOrderCode(new Date().getFullYear(), await orderRepository.lastId()),
       userId,
-      totalAmount: 0,
-      subtotal: 0,
-      shippingFee: 0,
-      deliveryMethod,
-      paymentMethod: payment.method,
-      paymentStatus: "PAID", // simulated payment always succeeds after validation
-      orderStatus: "Order Placed",
-      shippingFullName: shipping.fullName,
-      shippingPhone: shipping.phone,
-      shippingAddress: shipping.address,
-      city: shipping.city,
-      district: shipping.district,
-      ward: shipping.ward,
-      note: shipping.note,
-      sourceCartId: cart.id
+      shipping,
+      payment,
+      deliveryMethod
     });
-    for (const item of cart.items) {
-      order.addItem(new OrderItem(item.productId, item.product.name, item.product.price, item.quantity));
-    }
-    order.calculateTotal();
+    if (!payment.pay(order.totalAmount)) throw new AppError(400, "Payment failed.");
+    order.paymentStatus = payment.getPaymentStatus(); // simulated payment: "PAID" once the information is valid
 
     const saved = await orderRepository.save(order); // also stores the stock change and empties the stored cart
     cart.clear();
