@@ -3,6 +3,78 @@
 Complete functional e-commerce website for the university **Information Systems Analysis & Design** project.
 Implements all Customer use cases: Register → Login → Search → Product Detail → Add to Cart → Manage Cart → Checkout (Shipping + Simulated Card/E-wallet Payment) → Order → Track Order.
 
+## Chạy website trên localhost (làm theo thứ tự)
+
+Các lệnh dưới đây chạy trong **thư mục `web`**. Cần cài Node.js **18.17 trở lên** (kèm npm). Website dùng SQLite nên không cần cài MySQL, PostgreSQL hay Docker. Python chỉ cần nếu muốn tạo thêm cơ sở dữ liệu theo sơ đồ VP ở phần cuối.
+
+### 1. Mở terminal tại thư mục web
+
+Từ thư mục gốc của repository, chạy:
+
+```powershell
+cd web
+node --version
+npm --version
+```
+
+Nếu `node` hoặc `npm` chưa được nhận diện, cài Node.js rồi mở lại terminal. Các lệnh tiếp theo vẫn chạy tại `web`; không chạy ở thư mục gốc.
+
+### 2. Tạo file cấu hình môi trường
+
+Trong PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Trong macOS/Linux (Bash):
+
+```bash
+cp .env.example .env
+```
+
+Chỉ sao chép khi **chưa có** `.env`; nếu đã có thì giữ file đó. Mở `web/.env`, kiểm tra `DATABASE_URL="file:./dev.db"` và `JWT_SECRET` có giá trị. Đường dẫn SQLite này trỏ tới `web/prisma/dev.db`; file sẽ được tạo ở bước 4. `.env` bị Git bỏ qua. `GROQ_API_KEY` có thể để trống: chức năng mua hàng và tìm kiếm cơ bản vẫn chạy; tìm kiếm bằng ảnh, nhận dạng giọng nói và các tính năng AI cần khóa Groq trong `GROQ_API_KEY`. Sau khi sửa `.env` lúc server đang chạy, hãy khởi động lại server.
+
+### 3. Cài thư viện
+
+```powershell
+npm ci
+```
+
+Lệnh này cài đúng phiên bản trong `package-lock.json` và tự chạy `prisma generate` qua script `postinstall`. Lần đầu cần kết nối Internet để tải các gói.
+
+### 4. Tạo/cập nhật cơ sở dữ liệu SQLite
+
+```powershell
+npx prisma migrate deploy
+```
+
+Prisma áp dụng các migration trong `prisma/migrations` và tạo `prisma/dev.db` nếu chưa có. Chạy lại lệnh này khi lấy về các migration mới; các migration đã áp dụng sẽ được bỏ qua. Không xóa `dev.db` nếu muốn giữ tài khoản, giỏ hàng và đơn hàng của mình.
+
+### 5. Nạp dữ liệu mẫu
+
+```powershell
+npm run db:seed
+```
+
+Lệnh tạo tài khoản demo và thêm các sản phẩm còn thiếu. Chạy lại sẽ giữ sản phẩm và tài khoản đã có; script không xóa giỏ hàng hoặc đơn hàng.
+
+### 6. Khởi động và mở website
+
+```powershell
+npm run dev
+```
+
+Đợi terminal hiện `Ready`, sau đó mở **http://localhost:3000** trong trình duyệt. Để terminal này chạy trong lúc sử dụng website. Dừng server bằng `Ctrl+C`. Những lần chạy sau, từ thư mục `web` chỉ cần `npm run dev` (nếu không có migration mới).
+
+Đăng nhập thử bằng `customer@example.com` / `123456`, hoặc tạo tài khoản ở `/register`. Để kiểm tra nhanh dữ liệu, mở `http://localhost:3000/products`.
+
+Nếu cổng 3000 đã được chương trình khác sử dụng, chạy `npm run dev -- -p 3001` rồi mở **http://localhost:3001**. Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` thay cho `npm` (ví dụ `npm.cmd ci`, `npm.cmd run dev`). Nếu trang báo lỗi truy cập database, kiểm tra `.env` và chạy lại bước 4–5. Nếu trang chưa mở được, kiểm tra terminal đã hiện `Ready` và đúng cổng đang được Next.js hiển thị.
+
+### Tùy chọn: cơ sở dữ liệu theo sơ đồ VP
+
+Website sử dụng `prisma/dev.db`. Chỉ khi cần file 8 bảng để đối chiếu sơ đồ trong `VP/`, hãy cài Python rồi chạy `npm run db:vp` sau bước 5. Lệnh tạo `prisma/vp_catalog.db` riêng và không thay đổi database website. `npm run db:setup` cũng làm migration, seed và tạo file VP, nên cần Python; quy trình 1–6 ở trên không cần Python.
+
 ## Technology stack
 
 - **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, responsive design
@@ -67,24 +139,7 @@ to a controller, because Next.js requires route handlers to live under `app/`.
 
 Order statuses: `Order Placed → Confirmed → Processing → Shipped → Out for Delivery → Delivered` (rendered as progress timeline).
 
-## Installation & run (classroom demo)
-
-```bash
-npm install
-npx prisma migrate dev --name init   # creates prisma/dev.db
-npx prisma db seed                   # demo catalogue + test customer; preserves existing data
-npm run dev                          # open http://localhost:3000
-```
-
-One-liner alternative: `npm run db:setup` (migrate, seed, VP database).
-
-To add the 21 newest consumer-tech products (consoles, cameras, smart home, wearables...), run `npm run db:add-more`.
-Their photos are stored in `public/products` (credits in `CREDITS.md`).
-
-To add only the 60 extra catalogue products to an existing database, run `npm run db:add-extra`.
-The command is safe to repeat and preserves users, carts, and orders. These 60 products,
-including their prices, stock, ratings, and sales figures, are fictional classroom demo data.
-The catalogue uses category related stock photos; an image is not a photograph of the exact listed model.
+The seed in step 5 includes the extra catalogue, PC and newer consumer-tech products. Their photos are stored in `public/products` (credits in `CREDITS.md`). The catalogue data is fictional classroom demo data; category photos may not show the exact listed model. The `db:add-pc`, `db:add-extra` and `db:add-more` commands can add the corresponding missing product groups individually to an existing database.
 The checked in Prisma schema and migrations define the database. The SQLite file is local and ignored by Git.
 
 The database diagram in `VP/Screenshot 2026-10-13 102115.png` has a different,
@@ -96,7 +151,7 @@ The website continues to use `prisma/dev.db`, which has additional fields needed
 for images, categories, authentication and checkout. Payment card numbers and CVVs
 are never copied to the VP database.
 
-Build check: `npm run build` · `npx tsc --noEmit`.
+To run the production build locally instead of the development server: `npm run build`, then `npm run start` (still opens `http://localhost:3000`). Stop the development server first so the port is free.
 
 ## Test accounts & payment
 
