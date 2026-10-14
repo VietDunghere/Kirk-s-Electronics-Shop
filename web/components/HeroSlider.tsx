@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { DRONE_FEE, ROBOT_CAR_FEE, formatVND } from "@/lib/utils";
 
 type Slide = {
   title: string;
@@ -32,7 +33,7 @@ const SLIDES: Slide[] = [
     badge: "🚁 NEW SERVICE",
     primary: { href: "/products", label: "Shop & choose Drone" },
     secondary: { href: "/track-order", label: "Track order" },
-    note: "Flat fee 49,000 VND · ETA ~3 minutes (demo simulation)",
+    note: `Flat fee ${formatVND(DRONE_FEE)} · ETA ~3 minutes (demo simulation)`,
     credit: "Photo: HadasBandel, Wikimedia Commons (CC BY-SA 4.0)"
   },
   {
@@ -43,7 +44,7 @@ const SLIDES: Slide[] = [
     badge: "🚙 NEW SERVICE",
     primary: { href: "/products", label: "Shop & choose Autonomous car" },
     secondary: { href: "/track-order", label: "Track order" },
-    note: "Flat fee 29,000 VND · ETA ~4 minutes (demo simulation)",
+    note: `Flat fee ${formatVND(ROBOT_CAR_FEE)} · ETA ~4 minutes (demo simulation)`,
     credit: "Photo: Mbrickn, Wikimedia Commons (CC BY-SA 4.0)"
   }
 ];

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -48,6 +48,35 @@ export default function CheckoutPage() {
   const shippingFee = calcDeliveryFee(delivery, subtotal);
   const total = subtotal + shippingFee;
 
+  // Asks the server to check a step (shipping or payment) before moving on; shows its message when it refuses.
+  const checkStep = async (url: string, body: unknown): Promise<boolean> => {
+    setError("");
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) { setError(d.error || "Please check your information."); return false; }
+      return true;
+    } catch {
+      setError("Could not reach the server.");
+      return false;
+    }
+  };
+
+  const goToPayment = async () => {
+    if (!shipValid) { setError("Please complete shipping information."); return; }
+    if (await checkStep("/api/checkout/shipping", { shipping })) setStep(2);
+  };
+
+  const goToReview = async () => {
+    if (method === "CARD") {
+      const err = validateCard(card);
+      if (err) { setError(err); return; }
+    } else if (!walletConfirmed) {
+      setError("Please confirm e-wallet payment."); return;
+    }
+    if (await checkStep("/api/checkout/payment", { paymentMethod: method, card, walletConfirmed })) setStep(3);
+  };
+
   const placeOrder = async () => {
     setError("");
     if (!shipValid) { setError("Please complete shipping information."); setStep(1); return; }
@@ -96,7 +125,7 @@ export default function CheckoutPage() {
               <h2 className="mb-3 font-bold">Step 1: Shipping Information</h2>
               <ShippingForm initial={shipping} onChange={setShipping} onValidChange={setShipValid} />
               <DeliverySelector value={delivery} onChange={setDelivery} subtotal={subtotal} address={[shipping.address, shipping.ward, shipping.district, shipping.city].filter(Boolean).join(", ")} />
-              <button onClick={() => { if (!shipValid) setError("Please complete shipping information."); else { setError(""); setStep(2); } }}
+              <button onClick={goToPayment}
                 className="mt-4 w-full rounded-lg bg-[#0A3161] py-2.5 text-sm font-bold text-white hover:bg-[#B31942]">
                 Continue to Payment
               </button>
@@ -109,7 +138,7 @@ export default function CheckoutPage() {
                 walletConfirmed={walletConfirmed} setWalletConfirmed={setWalletConfirmed} />
               <div className="mt-4 flex gap-2">
                 <button onClick={() => setStep(1)} className="flex-1 rounded-lg border py-2.5 text-sm font-semibold">Back</button>
-                <button onClick={() => setStep(3)} className="flex-1 rounded-lg bg-[#0A3161] py-2.5 text-sm font-bold text-white hover:bg-[#B31942]">
+                <button onClick={goToReview} className="flex-1 rounded-lg bg-[#0A3161] py-2.5 text-sm font-bold text-white hover:bg-[#B31942]">
                   Review Order
                 </button>
               </div>

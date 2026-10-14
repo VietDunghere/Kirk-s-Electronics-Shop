@@ -12,6 +12,7 @@
     "db:seed": "prisma db seed",
     "db:add-pc": "tsx prisma/addPcProducts.ts",
     "db:add-extra": "tsx prisma/addExtraProducts.ts",
+    "db:add-more": "tsx prisma/addMoreProducts.ts",
     "db:vp": "python prisma/buildVpDatabase.py",
     "db:setup": "prisma migrate dev --name init && prisma db seed && npm run db:vp"
   },

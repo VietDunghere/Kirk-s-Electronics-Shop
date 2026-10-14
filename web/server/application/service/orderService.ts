@@ -7,7 +7,7 @@ import { AppError } from "./appError";
 
 function withTracking(order: Order) {
   const tracking = computeTracking(order);
-  return { ...order, orderStatus: tracking?.status ?? order.orderStatus, tracking };
+  return { ...order, orderStatus: tracking?.status ?? order.getStatus(), tracking };
 }
 
 export const orderService = {

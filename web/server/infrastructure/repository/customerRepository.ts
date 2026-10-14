@@ -1,10 +1,12 @@
 // infrastructure.repository — Customer persistence (table User). Prisma calls only, no business rules.
 import { prisma } from "../database/prisma";
-import type { Customer } from "../../domain/customer/customer";
+import { Customer } from "../../domain/customer/customer";
 
 export const customerRepository = {
-  findByEmail(email: string): Promise<Customer | null> {
-    return prisma.user.findUnique({ where: { email } });
+  /** Hình 1 findByUsername: the customer's user name is the e-mail address. */
+  async findByUsername(username: string): Promise<Customer | null> {
+    const row = await prisma.user.findUnique({ where: { email: username } });
+    return row ? Customer.fromRecord(row) : null;
   },
 
   findProfileById(id: number) {
@@ -14,7 +16,7 @@ export const customerRepository = {
     });
   },
 
-  save(data: { fullName: string; email: string; passwordHash: string }): Promise<Customer> {
-    return prisma.user.create({ data });
+  async save(data: { fullName: string; email: string; passwordHash: string }): Promise<Customer> {
+    return Customer.fromRecord(await prisma.user.create({ data }));
   }
 };

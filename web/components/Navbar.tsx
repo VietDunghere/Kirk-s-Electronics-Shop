@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "./Toast";
 import EagleLogo from "./EagleLogo";
+import SearchTools from "./SearchTools";
 
 type Me = { id: number; fullName: string; email: string } | null;
 
@@ -69,6 +70,11 @@ export default function Navbar() {
     router.push(`/search?q=${encodeURIComponent(keyword.trim())}`);
   };
 
+  const searchVoice = (text: string) => {
+    setKeyword(text);
+    router.push(`/search?q=${encodeURIComponent(text)}`);
+  };
+
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setMe(null);
@@ -98,6 +104,7 @@ export default function Navbar() {
           <button className="rounded-r-lg bg-[#0A3161] px-5 py-2 text-sm font-semibold text-white hover:bg-[#B31942]">
             Search
           </button>
+          <SearchTools onVoiceText={searchVoice} />
         </form>
         <nav className="ml-auto hidden items-center gap-4 text-sm font-medium lg:flex">
           <Link href="/" className="hover:text-[#B31942]">Home</Link>
@@ -138,6 +145,7 @@ export default function Navbar() {
             className="w-full rounded-l-lg border border-gray-300 px-4 py-2 text-sm outline-none"
           />
           <button className="rounded-r-lg bg-[#0A3161] px-4 py-2 text-sm font-semibold text-white">Go</button>
+          <SearchTools onVoiceText={searchVoice} />
         </form>
       </div>
       {menuOpen && (

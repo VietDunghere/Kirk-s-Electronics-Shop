@@ -42,18 +42,17 @@ export const customerService = {
     const invalid = validateRegistration(input);
     if (invalid) throw new AppError(400, invalid);
     const email = normalizeEmail(input.email as string);
-    if (await customerRepository.findByEmail(email)) throw new AppError(409, "Email already exists.");
+    if (await customerRepository.findByUsername(email)) throw new AppError(409, "Email already exists.");
     const passwordHash = await bcrypt.hash(input.password as string, 10);
     const customer = await customerRepository.save({ fullName: (input.fullName as string).trim(), email, passwordHash });
     const user = toSession(customer);
     return { user, token: customerService.signToken(user) };
   },
 
-  async login(email?: string, password?: string) {
-    if (!email?.trim() || !password) throw new AppError(400, "Email and password are required.");
-    const customer = await customerRepository.findByEmail(normalizeEmail(email));
-    if (!customer) throw new AppError(401, "Invalid email or password.");
-    if (!(await bcrypt.compare(password, customer.passwordHash))) throw new AppError(401, "Invalid email or password.");
+  async login(username?: string, password?: string) {
+    if (!username?.trim() || !password) throw new AppError(400, "Email and password are required.");
+    const customer = await customerRepository.findByUsername(normalizeEmail(username));
+    if (!customer || !(await customer.login(username, password))) throw new AppError(401, "Invalid email or password.");
     const user = toSession(customer);
     return { user, token: customerService.signToken(user) };
   },
