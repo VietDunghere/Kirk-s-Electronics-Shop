@@ -4,6 +4,7 @@
 // Never invents products: every recommendation comes from productRepository.
 import { productRepository } from "../../infrastructure/repository/productRepository";
 import type { Product } from "../../domain/product/product";
+import { detectBrandRules, detectOS, matchesBrandAndOS, brandLabels, detectModel, matchesModel } from "./brandFilter";
 
 export type ShoppingIntent = {
   maxPrice?: number;
@@ -95,6 +96,43 @@ const TOKEN_CATEGORY: Record<string, [string, string[]]> = {
   nitro: ["Laptops", ["nitro", "laptop"]],
   vr: ["Gaming", ["vr", "headset"]]
 };
+
+// Brand / product-line phrases also appear in CATEGORY_SIGNALS (huawei->Phones,
+// iphone->Phones...). When a brand is named, those derived categories must NOT
+// force the pool (otherwise "huawei" would hide Watch/MatePad, "samsung watch"
+// would leak phones). Genuine categories come only from non-brand signals.
+const BRAND_SIGNAL_PHRASES = new Set([
+  "macbook",
+  "iphone",
+  "galaxy",
+  "pixel",
+  "pura",
+  "huawei",
+  "samsung",
+  "ipad",
+  "matepad",
+  "airpods",
+  "mavic",
+  "avata",
+  "drone",
+  "flycam",
+  "dji",
+  "nitro"
+]);
+
+function parseGenuineCategories(text: string): string[] {
+  const cleaned = ` ${clean(text)} `;
+  let rest = cleaned;
+  const cats: string[] = [];
+  for (const [phrase, cat] of [...CATEGORY_SIGNALS].sort((a, b) => b[0].length - a[0].length)) {
+    if (BRAND_SIGNAL_PHRASES.has(phrase)) continue;
+    if (rest.includes(` ${phrase} `)) {
+      if (!cats.includes(cat)) cats.push(cat);
+      rest = rest.split(` ${phrase} `).join(" ");
+    }
+  }
+  return cats;
+}
 
 // [phrases, human-readable need, search keywords]
 const USAGE_SIGNALS: [string[], string, string[]][] = [
@@ -309,8 +347,20 @@ function orderItems(scored: Scored[]): { inStock: Product[]; out: Product[] } {
 const catLabel = (cats: string[]) => cats.join("/");
 
 // Main use case: recommend 2-5 real products for a natural-language request.
+// Brand / OS strict: when the user names Huawei / iPhone / Samsung / Android...,
+// ONLY that brand/OS is ever returned — never filled with other brands.
 export async function recommend(rawText: string): Promise<RecommendationResult> {
   const intent = parseShoppingIntent(rawText);
+  const brandRules = detectBrandRules(rawText);
+  const os = detectOS(rawText);
+  const models = detectModel(rawText);
+  const hasBrandConstraint = brandRules.length > 0 || os !== null;
+  const hasModelConstraint = models.length > 0;
+  const brandName = brandLabels(brandRules, os);
+  const modelName = models.length ? models.join(" ").toUpperCase() : "";
+  // Pool by genuine (non-brand) categories only, so "huawei" keeps Watch/MatePad
+  // while "dien thoai huawei" still restricts to Phones.
+  const effCategories = hasBrandConstraint ? parseGenuineCategories(rawText) : intent.categories;
   const relaxed: string[] = [];
   const toItems = (list: Product[], effMax?: number) =>
     list.map((p) => ({
@@ -324,9 +374,15 @@ export async function recommend(rawText: string): Promise<RecommendationResult> 
       reason: buildReason(p, intent, intent.keywords, effMax),
       meetsBudget: (effMax ?? intent.maxPrice) === undefined || p.price <= (effMax ?? intent.maxPrice!)
     }));
+  const brandFilter = (rows: Product[]) =>
+    hasBrandConstraint ? rows.filter((p) => matchesBrandAndOS(p, brandRules, os)) : rows;
+  // Model strict: "iphone 16" keeps ONLY iPhone 16 rows, never 15/14.
+  // Runs after the brand filter; every pass below reuses it.
+  const modelFilter = (rows: Product[]) =>
+    hasModelConstraint ? rows.filter((p) => matchesModel(p, models)) : rows;
 
   // Pass 1: exact constraints.
-  let rows = await pool(intent.keywords, intent.categories, intent.minPrice, intent.maxPrice, intent.sort);
+  let rows = modelFilter(brandFilter(await pool(intent.keywords, effCategories, intent.minPrice, intent.maxPrice, intent.sort)));
   let { inStock, out } = orderItems(scoreRows(rows, intent.keywords, intent.anchors));
   let picked: Product[] = inStock.slice(0, 5);
   let effMax: number | undefined;
@@ -339,7 +395,7 @@ export async function recommend(rawText: string): Promise<RecommendationResult> 
 
   // Honesty note: the single best-matching model costs more than the budget.
   if (picked.length && intent.maxPrice !== undefined) {
-    const noBudget = await pool(intent.keywords, intent.categories, intent.minPrice, undefined, intent.sort);
+    const noBudget = modelFilter(brandFilter(await pool(intent.keywords, effCategories, intent.minPrice, undefined, intent.sort)));
     const best = orderItems(scoreRows(noBudget, intent.keywords, intent.anchors)).inStock[0];
     if (best && best.price > intent.maxPrice && !picked.some((p) => p.id === best.id))
       relaxed.push(
@@ -347,10 +403,10 @@ export async function recommend(rawText: string): Promise<RecommendationResult> 
       );
   }
 
-  // Pass 2: no match within budget -> widen it by ~50%.
+  // Pass 2: no match within budget -> widen it by ~50% (brand/model still enforced).
   if (!picked.length && intent.maxPrice !== undefined) {
     const wider = Math.round(intent.maxPrice * 1.5);
-    rows = await pool(intent.keywords, intent.categories, intent.minPrice, wider, intent.sort);
+    rows = modelFilter(brandFilter(await pool(intent.keywords, effCategories, intent.minPrice, wider, intent.sort)));
     ({ inStock, out } = orderItems(scoreRows(rows, intent.keywords, intent.anchors)));
     picked = inStock.slice(0, 5);
     if (picked.length) {
@@ -359,25 +415,32 @@ export async function recommend(rawText: string): Promise<RecommendationResult> 
     }
   }
 
-  // Pass 3: drop the budget entirely, keep category + needs.
+  // Pass 3: drop the budget entirely, keep category + needs (brand/model still enforced).
   if (!picked.length && intent.maxPrice !== undefined) {
-    rows = await pool(intent.keywords, intent.categories, intent.minPrice, undefined, intent.sort);
+    rows = modelFilter(brandFilter(await pool(intent.keywords, effCategories, intent.minPrice, undefined, intent.sort)));
     ({ inStock } = orderItems(scoreRows(rows, intent.keywords, intent.anchors)));
     picked = inStock.slice(0, 5);
     if (picked.length)
       relaxed.push(`Vẫn chưa có mẫu nào trong tầm ${fmtShort(intent.maxPrice)} — đây là các mẫu gần nhu cầu nhất (giá cao hơn).`);
   }
 
-  // Pass 4: drop the category, keep keywords (wrong-guess safety).
-  if (!picked.length && intent.categories.length) {
-    rows = await pool(intent.keywords, [], intent.minPrice, intent.maxPrice, intent.sort);
+  // Pass 4: drop the category, keep keywords (brand/model still enforced, never other models).
+  if (!picked.length && effCategories.length) {
+    rows = modelFilter(brandFilter(await pool(intent.keywords, [], intent.minPrice, intent.maxPrice, intent.sort)));
     ({ inStock } = orderItems(scoreRows(rows, intent.keywords, intent.anchors)));
     picked = inStock.slice(0, 5);
-    if (picked.length) relaxed.push(`Mình mở rộng ra ngoài nhóm ${catLabel(intent.categories)} để tìm mẫu phù hợp.`);
+    if (picked.length) relaxed.push(`Mình mở rộng ra ngoài nhóm ${catLabel(effCategories)} để tìm mẫu ${brandName || "phù hợp"}.`);
   }
 
-  // Pass 5: popular in-stock fallback — still 100% real products.
+  // Pass 5: brand/model queries NEVER fall back to popular other-brand/model products.
   if (!picked.length) {
+    if (hasBrandConstraint || hasModelConstraint) {
+      const what = hasModelConstraint ? `mẫu ${brandName ? `${brandName} ${modelName}` : modelName}` : `sản phẩm ${brandName || "này"}`;
+      relaxed.push(
+        `Shop hiện chưa có ${what} phù hợp yêu cầu. Bạn thử mẫu hoặc nhu cầu khác nhé.`
+      );
+      return { intent, items: [], relaxed };
+    }
     const rows = await productRepository.search({ minPrice: intent.minPrice }, "popular", 20);
     picked = rows.filter((p) => p.stock > 0).slice(0, 4);
     relaxed.push("Shop hiện chưa có mẫu đúng nhu cầu này; đây là các sản phẩm bán chạy bạn có thể tham khảo.");
@@ -407,6 +470,10 @@ export function formatForLLM(rec: RecommendationResult): string {
 
 // Deterministic reply when no LLM key is configured — same real data, no AI needed.
 export function formatFallbackReply(rec: RecommendationResult): string {
+  if (!rec.items.length) {
+    const tail = rec.relaxed.length ? `\n${rec.relaxed.join(" ")}` : "";
+    return `Mình không tìm thấy mẫu nào khớp yêu cầu trong shop.${tail}`;
+  }
   const need: string[] = [];
   if (rec.intent.categories.length) need.push(`nhóm ${catLabel(rec.intent.categories)}`);
   if (rec.intent.maxPrice !== undefined) need.push(`ngân sách ${fmtShort(rec.intent.maxPrice)}`);

@@ -36,7 +36,7 @@ const PHOTOS: Record<string, string> = {
   "buds-pro": unsplash("1590658268037-6bf12165a8df"), // wireless earbuds
   "keyboard-k87": unsplash("1587829741301-dc798b83add3"), // RGB mechanical keyboard
   "mouse-viper": unsplash("1527814050087-3793815479db"), // gaming mouse on pad
-  "monitor-4k": unsplash("1527443224154-c4a3942d3acf"), // monitor desk setup
+  "monitor-ultragear": wikimedia("Gaming_PC_setup_with_RGB_lighting.jpg"), // LG UltraGear-style gaming monitor setup with RGB lighting (Wikimedia, CC BY-SA 4.0)
   "watch-s2": unsplash("1546868871-7041f2a55e12"), // smartwatch
   "tablet-11": unsplash("1544244015-0df4b3ffc6b0"), // tablet
   "speaker-boom": unsplash("1608043152269-423dbba4e7e1"), // bluetooth speaker
@@ -125,9 +125,9 @@ const products: SeedProduct[] = [
     price: 1490000, stock: 50, image: img("mouse-viper"), category: "Gaming", rating: 4.5, sold: 420
   },
   {
-    name: "4K Monitor UltraView 27",
-    description: "27-inch 4K IPS monitor, 99% sRGB, HDR400, height-adjustable stand. Great for design.",
-    price: 8990000, stock: 18, image: img("monitor-4k"), category: "Electronics", rating: 4.7, sold: 150, isFeatured: true
+    name: "4K Monitor UltraGear 27",
+    description: "27-inch 4K UHD gaming monitor, 144Hz refresh rate, 1ms response, HDR10, 95% DCI-P3. Great for gaming and design.",
+    price: 9490000, stock: 18, image: img("monitor-ultragear"), category: "Electronics", rating: 4.8, sold: 150, isFeatured: true
   },
   {
     name: "Smart Watch Fit S2",

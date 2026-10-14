@@ -29,6 +29,34 @@ export async function addProductToCart(productId: number, quantity: number, stoc
 export const COMPARE_KEY = "compare_ids";
 export const COMPARE_MAX = 3;
 
+// Wishlist: product ids kept in localStorage (no limit, guest + logged-in alike).
+export const WISHLIST_KEY = "wishlist_ids";
+
+export function readWishlist(): number[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(WISHLIST_KEY) || "[]");
+    return Array.isArray(v) ? v.map(Number).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeWishlist(ids: number[]) {
+  try {
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+  } catch {
+    /* storage unavailable: hearts just will not persist */
+  }
+  window.dispatchEvent(new Event("wishlist-updated"));
+}
+
+export function toggleWishlist(id: number): number[] {
+  const ids = readWishlist();
+  const next = ids.includes(id) ? ids.filter((i) => i !== id) : [...ids, id];
+  writeWishlist(next);
+  return next;
+}
+
 export function readCompare(): number[] {
   try {
     const v = JSON.parse(localStorage.getItem(COMPARE_KEY) || "[]");

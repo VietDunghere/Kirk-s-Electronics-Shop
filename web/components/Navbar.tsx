@@ -86,7 +86,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 shadow-[0_1px_12px_rgba(10,49,97,0.06)] backdrop-blur-md">
       {/* US flag stripe — red / white / navy */}
       <div className="h-1.5 w-full bg-gradient-to-r from-[#B31942] via-[#B31942] to-[#0A3161]" style={{ background: "linear-gradient(to right, #B31942 0 33%, #ffffff 33% 34%, #B31942 34% 38%, #ffffff 38% 39%, #0A3161 39% 100%)" }} />
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
@@ -99,7 +99,7 @@ export default function Navbar() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="Search products, categories..."
-            className="w-full rounded-l-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-[#B31942]"
+            className="w-full rounded-l-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm outline-none transition focus:border-[#B31942] focus:bg-white focus:ring-2 focus:ring-[#0A3161]/10"
           />
           <button className="rounded-r-lg bg-[#0A3161] px-5 py-2 text-sm font-semibold text-white hover:bg-[#B31942]">
             Search
@@ -113,7 +113,7 @@ export default function Navbar() {
           <Link href="/track-order" className="hover:text-[#B31942]">Track Order</Link>
           {me && <Link href="/orders" className="hover:text-[#B31942]">My Orders</Link>}
         </nav>
-        <Link href="/cart" className="relative rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">
+        <Link href="/cart" className="relative rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-sm font-semibold transition hover:border-[#0A3161]/30 hover:shadow-[0_6px_16px_-8px_rgba(10,49,97,0.4)]">
           Cart
           {cartCount > 0 && (
             <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#B31942] px-1 text-xs text-white">
@@ -131,7 +131,7 @@ export default function Navbar() {
         ) : (
           <div className="hidden items-center gap-2 sm:flex">
             <Link href="/login" className="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-gray-50">Login</Link>
-            <Link href="/register" className="rounded-lg bg-[#0A3161] px-3 py-2 text-sm font-semibold text-white hover:bg-[#B31942]">Register</Link>
+            <Link href="/register" className="rounded-lg bg-gradient-to-r from-[#0A3161] to-[#1A4A8A] px-3 py-2 text-sm font-semibold text-white hover:to-[#B31942]">Register</Link>
           </div>
         )}
         <button className="rounded-lg border px-3 py-2 lg:hidden" onClick={() => setMenuOpen(!menuOpen)}>☰</button>

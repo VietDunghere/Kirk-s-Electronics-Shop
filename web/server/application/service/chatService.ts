@@ -3,6 +3,7 @@ import { productRepository } from "../../infrastructure/repository/productReposi
 import { orderRepository } from "../../infrastructure/repository/orderRepository";
 import { recommendationService } from "./recommendationService";
 import { cartAssistantService, detectCartIntent } from "./cartAssistantService";
+import { detectBrandRules, detectOS, matchesBrandAndOS, brandLabels, matchedTriggerWords, detectModel, matchesModel, ANDROID_TRIGGERS, IOS_TRIGGERS } from "./brandFilter";
 import { FREE_SHIP_THRESHOLD, SHIPPING_FEE } from "../../domain/order/order";
 import { AppError } from "./appError";
 
@@ -128,12 +129,28 @@ async function searchProducts(args: {
   max_price?: number;
   sort?: string;
 }): Promise<(ChatProduct & { description: string })[]> {
-  const words = expandQuery(args.query || "");
+  const brandRules = detectBrandRules(args.query || "");
+  const os = detectOS(args.query || "");
+  const models = detectModel(args.query || "");
+  const hasBrandConstraint = brandRules.length > 0 || os !== null;
+  const hasModelConstraint = models.length > 0;
+  // Brand/OS triggers ("huawei", "android", brand synonyms like "samsung")
+  // are dropped from OR keywords: they rarely appear in names/descriptions
+  // and would only hide real matches. The strict post-filter below enforces
+  // brand/OS instead. Synonym terms ("galaxy" for "samsung") are kept because
+  // they DO appear in product names.
+  const triggers = matchedTriggerWords(args.query || "", brandRules, os);
+  const skip = new Set<string>([
+    ...Array.from(triggers),
+    ...ANDROID_TRIGGERS.flatMap((t) => t.split(/[^a-z0-9]+/)),
+    ...IOS_TRIGGERS.flatMap((t) => t.split(/[^a-z0-9]+/))
+  ]);
+  const words = expandQuery(args.query || "").filter((w) => !(hasBrandConstraint && skip.has(w)));
   const sort = args.sort || "popular";
 
   const run = (category?: string) =>
     productRepository.search(
-      { keywords: words, category, minPrice: args.min_price, maxPrice: args.max_price },
+      { keywords: words.length ? words : undefined, category, minPrice: args.min_price, maxPrice: args.max_price },
       sort,
       30
     );
@@ -141,6 +158,11 @@ async function searchProducts(args: {
   // Category is only a hint: retry without it so a wrong category never hides a real match.
   let rows = await run(args.category);
   if (!rows.length && args.category) rows = await run();
+
+  // Brand / OS / model strict: "huawei" only Huawei, "iphone" only iPhone,
+  // "android" only Android, "iphone 16" only iPhone 16... Never leak others.
+  if (hasBrandConstraint) rows = rows.filter((p) => matchesBrandAndOS(p, brandRules, os));
+  if (hasModelConstraint) rows = rows.filter((p) => matchesModel(p, models));
 
   // Rarer words count more: "galaxy" (1 product) beats "phone" (4 products), and stray tokens matching everything add ~nothing.
   type Row = { name: string; category: string; description: string };
@@ -213,6 +235,17 @@ type ChatContext = { text: string; products: ChatProduct[] };
 async function buildContext(userMessages: string[]): Promise<ChatContext> {
   const last = userMessages[userMessages.length - 1] || "";
   const recent = userMessages.slice(-2).join(" ");
+
+  // Brand / OS follows the LATEST message: a new "iphone?" after "huawei?"
+  // is an iPhone question, not "huawei + iphone". Fall back to the previous
+  // message only when the latest one names no brand/OS (follow-ups like
+  // "còn hàng không?").
+  const lastBrandRules = detectBrandRules(last);
+  const lastOs = detectOS(last);
+  const lastModels = detectModel(last);
+  const recentBrandRules = detectBrandRules(recent);
+  const recentOs = detectOS(recent);
+  const recentModels = detectModel(recent);
   const lines: string[] = [];
 
   const code = recent.match(ORDER_CODE_RE);
@@ -225,13 +258,32 @@ async function buildContext(userMessages: string[]): Promise<ChatContext> {
     );
   }
 
+  // Brand / OS / model mentioned -> strict mode: never fall back to popular other-brand/model items.
+  const useLast = lastBrandRules.length > 0 || lastOs !== null || lastModels.length > 0;
+  const brandRules = useLast ? lastBrandRules : recentBrandRules;
+  const os = useLast ? lastOs : recentOs;
+  const models = useLast ? lastModels : recentModels;
+  const hasBrandConstraint = brandRules.length > 0 || os !== null;
+  const hasModelConstraint = models.length > 0;
+  const brandName = brandLabels(brandRules, os);
+  const modelName = models.length ? models.join(" ").toUpperCase() : "";
+
   // Follow-ups like "còn hàng không?" have no product words: fall back to the previous message.
   const hasWords = expandQuery(last).length > 0;
   const query = hasWords ? last : recent;
   const c = parseConstraints(recent);
   let products = await searchProducts({ query, ...c });
-  if (!products.length && hasWords) products = await searchProducts({ query: recent, ...c });
-  if (!products.length) products = await searchProducts({ query: "", sort: "popular" });
+  if (!products.length && hasWords && !hasBrandConstraint)
+    products = await searchProducts({ query: recent, ...c });
+  // Popular fallback only for generic queries. Brand/model queries return empty
+  // so the model honestly says the shop doesn't carry that brand/model.
+  if (!products.length && !hasBrandConstraint && !hasModelConstraint) products = await searchProducts({ query: "", sort: "popular" });
+  if (!products.length && (hasBrandConstraint || hasModelConstraint)) {
+    const what = hasModelConstraint ? `mẫu ${brandName ? `${brandName} ${modelName}` : modelName}` : `"${brandName}"`;
+    lines.push(
+      `YÊU CẦU HÃNG/MẪU MÁY: khách hỏi ${what}. Shop KHÔNG có sản phẩm nào khớp. Hãy nói rõ shop không có ${what}, không nêu hãng/mẫu khác thay thế.`
+    );
+  }
 
   if (products.length) {
     lines.push(
@@ -253,6 +305,8 @@ Quy tắc:
 - Chỉ nói về shop: tư vấn sản phẩm, giá, tồn kho, phí ship, tra cứu đơn hàng. Câu hỏi ngoài phạm vi thì từ chối lịch sự. Chào hỏi thì chào lại và hỏi khách cần gì.
 - Mỗi tin nhắn có kèm "DỮ LIỆU CỬA HÀNG" do hệ thống tìm sẵn. Chỉ dùng dữ liệu đó cho tên, giá, tồn kho, rating, mô tả và trạng thái đơn. Tuyệt đối không bịa, không tự thêm màu sắc, cấu hình hay thông số khác.
 - Chỉ nêu những sản phẩm khách thực sự hỏi tới (đúng loại, đúng tầm giá). Dữ liệu có thể chứa cả sản phẩm không liên quan, hãy bỏ qua chúng.
+- LỌC THEO HÃNG/MẪU NGHIÊM NGẶT: khách hỏi hãng/hệ điều hành/mẫu nào thì CHỈ nêu đúng hãng/mẫu đó. Huawei chỉ nêu Huawei, iPhone chỉ nêu iPhone, Samsung chỉ nêu Samsung/Galaxy, Android chỉ nêu máy Android (không nêu iPhone/iPad), iOS chỉ nêu iPhone/iPad. Khách hỏi "iPhone 16" thì CHỈ nêu iPhone 16, tuyệt đối không nêu iPhone 15/14 hay mẫu khác. Tuyệt đối không nêu hãng/mẫu khác, không so sánh với hãng/mẫu khác, không nhắc tên hãng/mẫu khác trong câu trả lời (kể cả câu chốt như "không có hãng khác tốt hơn"). Nếu có khối YÊU CẦU HÃNG/MẪU MÁY báo không có hàng thì nói rõ shop không có, không thay thế bằng hãng/mẫu khác.
+- LỆNH MỚI GHI ĐÈ NGỮ CẢNH CŨ: tin nhắn mới nhất của khách là yêu cầu hiện tại. Nếu tin nhắn cũ hỏi hãng A nhưng tin nhắn mới hỏi hãng B thì CHỈ trả lời hãng B, quên hãng A đi.
 - Tên hãng thường không nằm trong tên sản phẩm (Galaxy = Samsung, Pixel = Google, iPhone = Apple). Chỉ nói shop không có khi không món nào trong dữ liệu phù hợp (ví dụ khách hỏi hãng Xiaomi mà không có), và có thể gợi ý món tương tự.
 - Sản phẩm HẾT HÀNG thì nói rõ là hết hàng, không gợi ý mua.
 - Giá tính bằng VND. Phí ship ${SHIPPING_FEE.toLocaleString("vi-VN")}đ, miễn phí cho đơn từ ${FREE_SHIP_THRESHOLD.toLocaleString("vi-VN")}đ. Thanh toán: thẻ hoặc ví MoMo/ZaloPay/VNPay (mô phỏng).
@@ -321,6 +375,25 @@ export const chatService = {
             recommendations
           };
         }
+        if (!ctx!.products.length) {
+          const lastUser = userTexts[userTexts.length - 1] || "";
+          const lastRules = detectBrandRules(lastUser);
+          const lastOs = detectOS(lastUser);
+          const lastModels = detectModel(lastUser);
+          const useLast = lastRules.length > 0 || lastOs !== null || lastModels.length > 0;
+          const bRules = useLast ? lastRules : detectBrandRules(userTexts.slice(-2).join(" "));
+          const bOs = useLast ? lastOs : detectOS(userTexts.slice(-2).join(" "));
+          const bModels = useLast ? lastModels : detectModel(userTexts.slice(-2).join(" "));
+          if (bRules.length || bOs || bModels.length) {
+            const name = bModels.length
+              ? `mẫu ${brandLabels(bRules, bOs) ? `${brandLabels(bRules, bOs)} ${bModels.join(" ").toUpperCase()}` : bModels.join(" ").toUpperCase()}`
+              : `sản phẩm ${brandLabels(bRules, bOs)}`;
+            return {
+              reply: `Shop hiện chưa có ${name} nào phù hợp. Bạn thử mẫu hoặc nhu cầu khác nhé.`,
+              products: []
+            };
+          }
+        }
         return {
           reply:
             ctx!.products.length !== 0
@@ -363,6 +436,10 @@ export const chatService = {
       // Recommendation path: cards are the explicit DB picks (no name-matching luck).
       if (rec) return { reply, products, recommendations };
 
+      // Brand / OS strict: cards must never show a product outside the requested
+      // brand/OS, even if the model's wording leaks another name. The context
+      // pool was already filtered, so the card pool is filtered the same way.
+
       // Cards = products the reply actually talks about. Exact full-name/tail match
       // first; otherwise the longest run of consecutive name-tokens found in the
       // reply ("Huawei MatePad 11.5 8/128GB" vs "MatePad 11.5inch" still hits on
@@ -381,7 +458,21 @@ export const chatService = {
       // A run counts only if it holds a real name-word (alpha, len>=4): spec-only
       // runs like "128 gb" / "15 128" must not card every 128GB phone.
       const isNameWord = (w: string) => /[a-z]/.test(w) && w.length >= 4;
-      const cards: ChatProduct[] = (await listAllProducts())
+      const cardLast = userTexts[userTexts.length - 1] || "";
+      const cardLastRules = detectBrandRules(cardLast);
+      const cardLastOs = detectOS(cardLast);
+      const cardLastModels = detectModel(cardLast);
+      const cardUseLast = cardLastRules.length > 0 || cardLastOs !== null || cardLastModels.length > 0;
+      const bRules = cardUseLast ? cardLastRules : detectBrandRules(userTexts.slice(-2).join(" "));
+      const bOs = cardUseLast ? cardLastOs : detectOS(userTexts.slice(-2).join(" "));
+      const bModels = cardUseLast ? cardLastModels : detectModel(userTexts.slice(-2).join(" "));
+      const hasConstraint = bRules.length > 0 || bOs !== null;
+      const hasModel = bModels.length > 0;
+      const allRows = await productRepository.search({}, "popular", 100);
+      let poolRows = hasConstraint ? allRows.filter((p) => matchesBrandAndOS(p, bRules, bOs)) : allRows;
+      if (hasModel) poolRows = poolRows.filter((p) => matchesModel(p, bModels));
+      const pool = poolRows.map(toChatProduct);
+      const cards: ChatProduct[] = pool
         .map((p) => {
           const name = p.name.toLowerCase();
           const tail = name.split(" ").slice(-2).join(" ");

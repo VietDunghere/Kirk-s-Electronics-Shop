@@ -11,7 +11,7 @@ type Slide = {
   badge?: string;
   primary: { href: string; label: string };
   secondary: { href: string; label: string };
-  note: string;
+  note?: string;
   credit?: string;
 };
 
@@ -66,11 +66,14 @@ export default function HeroSlider() {
 
   return (
     <section
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0A3161] via-[#B31942] to-[#0A3161] text-white"
+      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#071E3E] via-[#0A3161] to-[#B31942] text-white"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
     >
+      {/* subtle violet glow accent */}
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-violet-400/20 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
       <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${index * 100}%)` }}>
         {SLIDES.map((s, i) => (
           <div key={s.title} className="w-full shrink-0" aria-hidden={i !== index}>
@@ -89,7 +92,7 @@ export default function HeroSlider() {
                     {s.secondary.label}
                   </Link>
                 </div>
-                <p className="mt-4 text-xs text-white/80">{s.note}</p>
+                {s.note && <p className="mt-4 text-xs text-white/80">{s.note}</p>}
               </div>
               <div className="hidden flex-col items-center justify-center sm:flex">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -241,13 +241,16 @@ export function planVariant(variant: BundleVariant, budget: number, products: Bu
     else skipped.push(slot.label);
   });
 
-  // cheapest possible set of the core items: tells the customer what budget they would need
+  // cheapest possible set of the core items: tells the customer what budget they would need.
+  // A variant whose core can never be filled (no matching products at all)
+  // reports 0 so callers can ignore it instead of quoting a nonsense minimum.
   const minCoreCost = slots.reduce(
     (sum, s, i) => (s.core && options[i].length ? sum + Math.min(...options[i].map((o) => o.product.price)) : sum),
     0
   );
+  const allCoreFillable = slots.every((s, i) => !s.core || options[i].length > 0);
 
-  return { id: variant.id, label: variant.label, picks, total: picks.reduce((s, p) => s + p.product.price, 0), missingCore, skipped, minCoreCost };
+  return { id: variant.id, label: variant.label, picks, total: picks.reduce((s, p) => s + p.product.price, 0), missingCore, skipped, minCoreCost: allCoreFillable ? minCoreCost : 0 };
 }
 
 /**
